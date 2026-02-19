@@ -1,0 +1,2842 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <title>KimGetirdi — Influencer Yönetimi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-hover: #e2e8f0;
+      --border: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-soft: rgba(99, 102, 241, 0.12);
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      padding: 0 1.5rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .logo:hover {
+      opacity: 0.9;
+    }
+
+    .logo h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      margin: 0 0.75rem;
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      transition: color 0.25s, background 0.25s, box-shadow 0.25s, transform 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      transform: translateX(2px);
+    }
+
+    .nav-item-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      transition: background 0.25s, color 0.25s;
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Influencer'lar — mor/indigo gradient */
+    .nav-item--influencers .nav-item-icon {
+      background: rgba(99, 102, 241, 0.15);
+      color: #6366f1;
+    }
+    .nav-item--influencers:hover,
+    .nav-item--influencers.active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      color: #fff;
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+    .nav-item--influencers:hover .nav-item-icon,
+    .nav-item--influencers.active .nav-item-icon {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    /* Değerlendirmeler — amber/turuncu gradient */
+    .nav-item--reviews .nav-item-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+    }
+    .nav-item--reviews:hover,
+    .nav-item--reviews.active {
+      background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #dc2626 100%);
+      color: #fff;
+      border-color: rgba(234, 88, 12, 0.4);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    }
+    .nav-item--reviews:hover .nav-item-icon,
+    .nav-item--reviews.active .nav-item-icon {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    /* Raporlar — kırmızı/pembe gradient */
+    .nav-item--reports .nav-item-icon {
+      background: rgba(225, 29, 72, 0.15);
+      color: #e11d48;
+    }
+    .nav-item--reports:hover,
+    .nav-item--reports.active {
+      background: linear-gradient(135deg, #e11d48 0%, #dc2626 50%, #b91c1c 100%);
+      color: #fff;
+      border-color: rgba(220, 38, 38, 0.4);
+      box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+    }
+    .nav-item--reports:hover .nav-item-icon,
+    .nav-item--reports.active .nav-item-icon {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .sidebar-btn-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 0 1.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+      background-size: 200% 200%;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .sidebar-btn-add:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .sidebar-btn-add:active {
+      transform: translateY(0);
+    }
+
+    .sidebar-btn-add svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-btn-add {
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-list-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0 1.5rem;
+      margin: 1rem 0 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .sidebar-list-title.top {
+      margin: 0.5rem 0 0.5rem;
+    }
+
+    .sidebar-influencers {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sidebar-influencer {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s, background 0.2s;
+      min-height: 48px;
+    }
+
+    .sidebar-influencer:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+
+    .sidebar-influencer.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .sidebar-influencer {
+      cursor: pointer;
+    }
+
+    .sidebar-influencer-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .sidebar-influencer-text {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .sidebar-influencer-name {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    .sidebar-influencer-username {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      word-break: break-word;
+    }
+
+    .sidebar-empty {
+      padding: 1rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Main */
+    .main {
+      padding: 2rem 2.5rem 3rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+    }
+
+    /* Form card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin: 0.25rem 0 0;
+    }
+
+    .file-upload-wrap {
+      position: relative;
+      margin-top: 0.5rem;
+    }
+
+    .file-upload-input {
+      position: absolute;
+      width: 0.1px;
+      height: 0.1px;
+      opacity: 0;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .file-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: var(--bg-card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+
+    .file-upload-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .file-upload-btn:focus-within {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .file-upload-icon {
+      display: inline-flex;
+      width: 1.25rem;
+      height: 1.25rem;
+      color: inherit;
+    }
+
+    .file-upload-btn .file-upload-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .form-file-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 0.5rem;
+    }
+
+    .form-file-name.has-file {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    input[type="text"],
+    input[type="url"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Reels list */
+    .reels-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .reel-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .reel-row input {
+      flex: 1;
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .btn-add-reel {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px dashed var(--accent);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-add-reel:hover {
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Influencer list */
+    .influencers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .influencer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .influencer-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+    }
+
+    .influencer-thumb {
+      aspect-ratio: 16/10;
+      background: var(--bg-secondary);
+      object-fit: cover;
+      width: 100%;
+    }
+
+    .influencer-body {
+      padding: 1.25rem;
+    }
+
+    .influencer-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .influencer-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--bg-secondary);
+    }
+
+    .influencer-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .influencer-username {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.125rem;
+    }
+
+    .influencer-username a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .influencer-username a:hover {
+      text-decoration: underline;
+    }
+
+    .influencer-meta {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .influencer-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .influencer-actions .btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-lg);
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      padding: 0.875rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success {
+      background: var(--success);
+      color: white;
+    }
+
+    .toast.error {
+      background: var(--danger);
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .loading {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(99, 102, 241, 0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      margin-top: 2rem;
+    }
+
+    .detail-panel {
+      margin-top: 1.5rem;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .detail-panel-hero {
+      position: relative;
+      width: 100%;
+      min-height: 220px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .detail-panel-hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .detail-panel-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.4) 45%, transparent 70%);
+    }
+
+    .detail-panel-hero-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      width: 100%;
+    }
+
+    .detail-panel-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--bg-secondary);
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
+    }
+
+    .detail-panel-name {
+      font-family: 'Outfit', 'DM Sans', sans-serif;
+      font-size: 1.375rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 0 0 0.2rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .detail-panel-username {
+      font-size: 0.9375rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .detail-panel-username a {
+      color: rgba(255, 255, 255, 0.95);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .detail-panel-username a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-panel-media {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-panel-media-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+    }
+
+    .detail-panel-media-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .detail-panel-media-thumb {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: var(--bg-card);
+    }
+
+    .detail-panel-media-link {
+      margin-left: auto;
+    }
+
+    .detail-panel-media-value {
+      font-size: 0.8125rem;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .detail-panel-media-value a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .detail-panel-media-value a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-panel-body {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .detail-field {
+      margin-bottom: 0;
+    }
+
+    .detail-field-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .detail-field-value {
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+
+    .detail-reels-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .detail-reels-list li {
+      margin-bottom: 0.4rem;
+      font-size: 0.8125rem;
+    }
+
+    .detail-reels-list a {
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .detail-reels-list a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-panel-actions {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .crop-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    .crop-modal.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .crop-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+    }
+
+    .crop-modal-box {
+      position: relative;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .crop-modal-header {
+      padding: 1.25rem 1.5rem 0 1.5rem;
+    }
+
+    .crop-modal-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .crop-modal-desc {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin: 0 0 1rem 0;
+    }
+
+    .crop-modal-body {
+      padding: 0 1.5rem;
+      overflow: auto;
+    }
+
+    .crop-view {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      background: #1a1a1a;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .crop-view canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .crop-frame {
+      position: absolute;
+      box-sizing: border-box;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      cursor: move;
+      touch-action: none;
+    }
+
+    .crop-frame::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      outline: 1px dashed rgba(255, 255, 255, 0.5);
+      outline-offset: -4px;
+      pointer-events: none;
+    }
+
+    .crop-modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding: 1rem 1.5rem 1.25rem;
+    }
+
+    /* Hero */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 0 4rem;
+      max-width: 640px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.875rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+      width: fit-content;
+    }
+
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.25rem, 5vw, 3.25rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(180deg, #0f172a 0%, #475569 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 2rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-hero-primary {
+      background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+    }
+
+    .btn-hero-ghost {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-hero-ghost:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 2.5rem;
+      margin-top: 3rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .hero-stat {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .hero-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .hero-stat-label {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .form-section,
+    .detail-section {
+      display: none;
+    }
+
+    .form-section.visible,
+    .detail-section.visible {
+      display: block;
+    }
+
+    #detailPanel {
+      display: none;
+    }
+
+    .detail-section.visible #detailPanel {
+      display: block;
+    }
+
+    .hero.visible {
+      display: flex;
+    }
+
+    .hero:not(.visible) {
+      display: none;
+    }
+
+    /* List / Grid section */
+    .list-section {
+      display: none;
+    }
+
+    .list-section.visible,
+    .reports-section.visible,
+    .reviews-section.visible {
+      display: block;
+    }
+
+    .reports-section,
+    .reviews-section {
+      display: none;
+    }
+
+    .reports-section .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .report-card.resolved {
+      opacity: 0.75;
+      border-color: var(--text-muted);
+    }
+
+    .report-card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .report-card-influencer {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .report-card-date {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .report-card-summary {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .report-card-reason {
+      font-size: 0.875rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .report-card-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      white-space: pre-wrap;
+    }
+
+    .report-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .report-card-actions .btn {
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .reviews-section .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .review-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .review-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .review-row-meta {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .review-row-influencer {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .review-row-content {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    .review-row-stars {
+      color: #f59e0b;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .review-row-actions {
+      flex-shrink: 0;
+    }
+
+    .list-section .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .influencers-grid-main {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .influencer-grid-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .influencer-grid-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .influencer-grid-card-thumb {
+      width: 100%;
+      aspect-ratio: 16/10;
+      object-fit: cover;
+      background: var(--bg-secondary);
+    }
+
+    .influencer-grid-card-body {
+      padding: 1rem;
+    }
+
+    .influencer-grid-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .influencer-grid-card-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .influencer-grid-card-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      min-width: 0;
+    }
+
+    .influencer-grid-card-username {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.125rem;
+    }
+
+    .list-empty {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+
+    /* ========== MOBİL / RESPONSIVE ========== */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      min-height: 56px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1rem;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 999;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .btn-mobile-menu {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-mobile-menu:hover,
+    .btn-mobile-menu:active {
+      background: var(--bg-hover);
+    }
+
+    .btn-mobile-menu svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .mobile-header .logo {
+      padding: 0;
+      margin: 0;
+      border: none;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mobile-header .logo h1 {
+      font-size: 1.125rem;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .sidebar-overlay.visible {
+      opacity: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .mobile-header {
+        display: flex;
+      }
+
+      .main {
+        padding-top: calc(56px + 1.5rem);
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+        padding-bottom: 2rem;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        max-width: 85vw;
+        height: 100vh;
+        height: 100dvh;
+        z-index: 1001;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.12);
+      }
+
+      body.sidebar-open {
+        overflow: hidden;
+      }
+
+      .sidebar-overlay {
+        display: block;
+        pointer-events: none;
+      }
+
+      .sidebar-overlay.visible {
+        pointer-events: auto;
+      }
+
+      .page-header h2 {
+        font-size: 1.5rem;
+      }
+
+      .hero {
+        padding: 2rem 0 3rem;
+        max-width: 100%;
+      }
+
+      .hero h1 {
+        font-size: clamp(1.75rem, 5vw, 2.5rem);
+      }
+
+      .hero-stats {
+        gap: 2rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+      }
+
+      .influencers-grid-main {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      }
+
+      .detail-panel-hero {
+        min-height: 180px;
+      }
+
+      .detail-panel-hero-content {
+        flex-wrap: wrap;
+      }
+
+      .detail-panel-media {
+        flex-wrap: wrap;
+      }
+
+      .form-actions .btn {
+        min-height: 44px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main {
+        padding: calc(56px + 1rem) 1rem 1.5rem;
+      }
+
+      .page-header {
+        margin-bottom: 1.25rem;
+      }
+
+      .page-header h2 {
+        font-size: 1.375rem;
+      }
+
+      .page-header p {
+        font-size: 0.875rem;
+      }
+
+      .card {
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .card-title {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .hero {
+        padding: 1.5rem 0 2.5rem;
+      }
+
+      .hero-badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.75rem;
+      }
+
+      .hero h1 {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+      }
+
+      .hero-desc {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-actions .btn-hero {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+      }
+
+      .influencers-grid-main {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .influencer-grid-card-body {
+        padding: 0.875rem;
+      }
+
+      .form-grid {
+        gap: 1rem;
+      }
+
+      .form-actions {
+        flex-direction: column;
+        margin-top: 1.25rem;
+      }
+
+      .form-actions .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+      }
+
+      .detail-panel-hero-content {
+        padding: 1.25rem 1.25rem 1rem;
+      }
+
+      .detail-panel-avatar {
+        width: 56px;
+        height: 56px;
+      }
+
+      .detail-panel-name {
+        font-size: 1.2rem;
+      }
+
+      .detail-panel-media {
+        padding: 0.75rem 1.25rem;
+        gap: 1rem;
+      }
+
+      .detail-panel-media-thumb {
+        width: 52px;
+        height: 52px;
+      }
+
+      .detail-panel-actions {
+        flex-direction: column;
+        padding: 1rem 1.25rem;
+      }
+
+      .detail-panel-actions .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+      }
+
+      .toast {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        max-width: none;
+      }
+
+      .sidebar-btn-add {
+        margin-left: 1rem;
+        margin-right: 1rem;
+        min-height: 44px;
+      }
+
+      .nav-item {
+        min-height: 48px;
+      }
+
+      .sidebar-influencer {
+        min-height: 48px;
+        padding: 0.625rem 1rem;
+      }
+
+      .empty-state,
+      .list-empty {
+        padding: 2rem 1rem;
+        font-size: 0.875rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .mobile-header .logo h1 {
+        font-size: 1rem;
+      }
+
+      .sidebar {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="mobile-header" id="mobileHeader" aria-hidden="true">
+    <button type="button" class="btn-mobile-menu" id="btnMobileMenu" aria-label="Menüyü aç" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo">
+      <h1>Kim<span>Getirdi</span></h1>
+    </div>
+  </header>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Ana menü">
+      <div class="logo">
+        <h1>Kim<span>Getirdi</span></h1>
+      </div>
+      <button type="button" class="sidebar-btn-add" id="sidebarBtnAdd" aria-label="Yeni influencer ekle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Influencer Ekle
+      </button>
+      <nav>
+        <a href="#" class="nav-item nav-item--influencers active" id="navInfluencers">
+          <span class="nav-item-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="nav-item-text">Influencer'lar</span>
+        </a>
+        <a href="#" class="nav-item nav-item--reviews" id="navReviews">
+          <span class="nav-item-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </span>
+          <span class="nav-item-text">Değerlendirmeler</span>
+        </a>
+        <a href="#" class="nav-item nav-item--reports" id="navReports">
+          <span class="nav-item-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </span>
+          <span class="nav-item-text">Raporlar</span>
+        </a>
+      </nav>
+      <p class="sidebar-list-title top">Kayıtlı Influencer'lar</p>
+      <div class="sidebar-influencers" id="sidebarInfluencers">
+        <div class="sidebar-empty" id="sidebarEmpty">Henüz influencer yok</div>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <main class="main">
+      <div class="main-content">
+        <section class="hero visible" id="heroSection">
+          <div class="hero-badge">Influencer Yönetim Paneli</div>
+          <h1>Kim <span>Getirdi</span> ile içerik üreticilerinizi tek yerden yönetin.</h1>
+          <p class="hero-desc">Profil resmi, thumbnail ve reels linklerini ekleyerek influencer kayıtlarınızı oluşturun. Tüm verileriniz güvenle saklanır.</p>
+          <div class="hero-actions">
+            <button type="button" class="btn-hero btn-hero-primary" id="heroBtnAdd">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Yeni Influencer Ekle
+            </button>
+          </div>
+          <div class="hero-stats" id="heroStats">
+            <div class="hero-stat">
+              <div class="hero-stat-value" id="heroStatCount">0</div>
+              <div class="hero-stat-label">Kayıtlı Influencer</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="list-section" id="listSection">
+          <header class="page-header">
+            <h2>Influencer'lar</h2>
+            <p>Kayıtlı influencer'larınız. Detay için bir karta tıklayın.</p>
+          </header>
+          <div class="influencers-grid-main" id="influencersGridMain">
+            <div class="list-empty" id="listEmpty">Henüz influencer yok. Yeni eklemek için sol paneldeki butonu kullanın.</div>
+          </div>
+        </section>
+
+        <section class="reports-section" id="reportsSection">
+          <header class="page-header">
+            <h2>Değerlendirme Raporları</h2>
+            <p>Kullanıcılar tarafından raporlanan değerlendirmeler. İnceleyip değerlendirmeyi kaldırabilir veya şikayeti gerekçesiz bulabilirsiniz.</p>
+          </header>
+          <div class="reports-list-wrap" id="reportsListWrap">
+            <div class="list-empty" id="reportsEmpty">Bekleyen rapor yok.</div>
+          </div>
+        </section>
+
+        <section class="reviews-section" id="reviewsSection">
+          <header class="page-header">
+            <h2>Tüm Değerlendirmeler</h2>
+            <p>Platformdaki tüm değerlendirmeler. Kalıcı olarak silmek için ilgili satırdaki butonu kullanın.</p>
+          </header>
+          <div class="reviews-list-wrap" id="reviewsListWrap">
+            <div class="list-empty" id="reviewsEmpty">Değerlendirme yok.</div>
+          </div>
+        </section>
+
+        <section class="form-section" id="formSection">
+          <header class="page-header">
+            <h2>Yeni Influencer Ekle</h2>
+            <p>Profil resmi, thumbnail ve reels linklerini ekleyerek influencer kaydı oluşturun.</p>
+          </header>
+          <section class="card">
+            <h3 class="card-title">Influencer Bilgileri</h3>
+            <form id="form-influencer">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Influencer Adı</label>
+              <input type="text" id="name" name="name" placeholder="Örn: Ayşe Yılmaz" required />
+            </div>
+            <div class="form-group">
+              <label for="username">Kullanıcı Adı</label>
+              <input type="text" id="username" name="username" placeholder="Örn: ayseyilmaz veya @ayseyilmaz" />
+            </div>
+            <div class="form-group full">
+              <label for="instagramUrl">Instagram Profil Linki</label>
+              <input type="url" id="instagramUrl" name="instagramUrl" placeholder="https://www.instagram.com/..." />
+            </div>
+            <div class="form-group">
+              <label for="profileImageUrl">Profil Resmi URL</label>
+              <input type="url" id="profileImageUrl" name="profileImageUrl" placeholder="https://..." />
+              <p class="form-hint">veya dosya yükle</p>
+              <div class="file-upload-wrap">
+                <label class="file-upload-btn">
+                  <input type="file" id="profileImageFile" accept="image/*" class="file-upload-input" />
+                  <span class="file-upload-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                  </span>
+                  <span class="file-upload-text">Dosya seç</span>
+                </label>
+                <span class="form-file-name" id="profileImageFileName"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="thumbnailUrl">Thumbnail URL</label>
+              <input type="url" id="thumbnailUrl" name="thumbnailUrl" placeholder="https://..." />
+              <p class="form-hint">veya dosya yükle</p>
+              <div class="file-upload-wrap">
+                <label class="file-upload-btn">
+                  <input type="file" id="thumbnailFile" accept="image/*" class="file-upload-input" />
+                  <span class="file-upload-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </span>
+                  <span class="file-upload-text">Dosya seç</span>
+                </label>
+                <span class="form-file-name" id="thumbnailFileName"></span>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label>Reels Linkleri</label>
+              <div class="reels-list" id="reelsList">
+                <div class="reel-row">
+                  <input type="url" name="reel" placeholder="Reels video linki" />
+                  <button type="button" class="btn-icon btn-remove-reel" title="Kaldır" aria-label="Kaldır">×</button>
+                </div>
+              </div>
+              <button type="button" class="btn-add-reel" id="addReel">+ Reels linki ekle</button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSubmit">
+              Influencer Ekle
+            </button>
+            <button type="button" class="btn btn-ghost" id="btnCancel" style="display: none;">
+              İptal
+            </button>
+          </div>
+        </form>
+          </section>
+        </section>
+
+        <section class="detail-section" id="detailSection">
+      <section class="detail-panel card" id="detailPanel">
+        <div class="detail-panel-hero">
+          <img class="detail-panel-hero-bg" id="detailThumbBg" src="" alt="" referrerpolicy="no-referrer" />
+          <div class="detail-panel-hero-overlay"></div>
+          <div class="detail-panel-hero-content">
+            <img class="detail-panel-avatar" id="detailAvatar" src="" alt="" referrerpolicy="no-referrer" />
+            <h2 class="detail-panel-name" id="detailName"></h2>
+            <div class="detail-panel-username" id="detailUsername"></div>
+          </div>
+        </div>
+        <div class="detail-panel-media">
+          <div class="detail-panel-media-item">
+            <span class="detail-panel-media-label">Profil</span>
+            <img class="detail-panel-media-thumb" id="detailAvatarSmall" src="" alt="" referrerpolicy="no-referrer" />
+          </div>
+          <div class="detail-panel-media-item">
+            <span class="detail-panel-media-label">Thumbnail</span>
+            <img class="detail-panel-media-thumb" id="detailThumb" src="" alt="" referrerpolicy="no-referrer" />
+          </div>
+          <div class="detail-panel-media-item detail-panel-media-link">
+            <span class="detail-panel-media-label">Instagram</span>
+            <div class="detail-panel-media-value" id="detailInstagramUrl"></div>
+          </div>
+        </div>
+        <div class="detail-panel-body">
+          <div class="detail-field">
+            <div class="detail-field-label">Reels</div>
+            <ul class="detail-reels-list" id="detailReelsList"></ul>
+          </div>
+        </div>
+        <div class="detail-panel-actions">
+          <button type="button" class="btn btn-danger" id="detailBtnDelete">Sil</button>
+          <button type="button" class="btn btn-ghost" id="detailBtnEdit">Düzenle</button>
+        </div>
+      </section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite" style="display: none;"></div>
+
+  <div id="thumbnailCropModal" class="crop-modal" aria-hidden="true">
+    <div class="crop-modal-backdrop"></div>
+    <div class="crop-modal-box">
+      <div class="crop-modal-header">
+        <h3 class="crop-modal-title">Thumbnail kırp</h3>
+        <p class="crop-modal-desc">Sürükleyerek alanı seçin · Profil sayfasındaki hero oranına uygun (2:1)</p>
+      </div>
+      <div class="crop-modal-body">
+        <div class="crop-view">
+          <canvas id="thumbnailCropCanvas"></canvas>
+          <div id="thumbnailCropFrame" class="crop-frame"></div>
+        </div>
+      </div>
+      <div class="crop-modal-actions">
+        <button type="button" class="btn btn-ghost" id="thumbnailCropCancel">İptal</button>
+        <button type="button" class="btn btn-primary" id="thumbnailCropApply">Kırp ve kullan</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      getDoc,
+      doc,
+      updateDoc,
+      deleteDoc,
+      serverTimestamp,
+    } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCJc3266ApjShpFSkPc-b8rm_cIhHQbFKo',
+      authDomain: 'kimgetirdi.firebaseapp.com',
+      projectId: 'kimgetirdi',
+      storageBucket: 'kimgetirdi.firebasestorage.app',
+      messagingSenderId: '817525082261',
+      appId: '1:817525082261:web:4662f0a52c36dac8ebb39c',
+      measurementId: 'G-HXG6T552VZ',
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const COLLECTION = 'influencers';
+    const REPORTS_COLLECTION = 'evaluationReports';
+
+    const form = document.getElementById('form-influencer');
+    const reelsList = document.getElementById('reelsList');
+    const addReelBtn = document.getElementById('addReel');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnCancel = document.getElementById('btnCancel');
+    const sidebarInfluencers = document.getElementById('sidebarInfluencers');
+    const sidebarEmpty = document.getElementById('sidebarEmpty');
+    const toastEl = document.getElementById('toast');
+    const heroSection = document.getElementById('heroSection');
+    const formSection = document.getElementById('formSection');
+    const listSection = document.getElementById('listSection');
+    const reportsSection = document.getElementById('reportsSection');
+    const reviewsSection = document.getElementById('reviewsSection');
+    const detailSection = document.getElementById('detailSection');
+    const heroStatCount = document.getElementById('heroStatCount');
+    const reportsListWrap = document.getElementById('reportsListWrap');
+    const reportsEmpty = document.getElementById('reportsEmpty');
+    const reviewsListWrap = document.getElementById('reviewsListWrap');
+    const reviewsEmpty = document.getElementById('reviewsEmpty');
+
+    let editingId = null;
+    let profileImageDataUrl = null;
+    let thumbnailDataUrl = null;
+    let existingProfileImageUrl = null;
+    let existingThumbnailUrl = null;
+
+    function imageFileToBase64(file, maxWidth, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+            if (w > maxWidth) {
+              h = (h * maxWidth) / w;
+              w = maxWidth;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const profileImageFileEl = document.getElementById('profileImageFile');
+    const thumbnailFileEl = document.getElementById('thumbnailFile');
+    const profileImageFileNameEl = document.getElementById('profileImageFileName');
+    const thumbnailFileNameEl = document.getElementById('thumbnailFileName');
+
+    if (profileImageFileEl) {
+      profileImageFileEl.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        profileImageDataUrl = null;
+        if (profileImageFileNameEl) {
+          profileImageFileNameEl.textContent = '';
+          profileImageFileNameEl.classList.remove('has-file');
+        }
+        if (!file || !file.type.startsWith('image/')) return;
+        try {
+          profileImageDataUrl = await imageFileToBase64(file, 800, 0.82);
+          if (profileImageFileNameEl) {
+            profileImageFileNameEl.textContent = file.name + ' · base64 ile kaydedilecek';
+            profileImageFileNameEl.classList.add('has-file');
+          }
+        } catch (err) {
+          showToast('Profil resmi işlenemedi: ' + (err.message || ''), 'error');
+        }
+      });
+    }
+    const THUMBNAIL_CROP_ASPECT = 2;
+    const thumbnailCropModal = document.getElementById('thumbnailCropModal');
+    const thumbnailCropCanvas = document.getElementById('thumbnailCropCanvas');
+    const thumbnailCropFrame = document.getElementById('thumbnailCropFrame');
+    const thumbnailCropCancel = document.getElementById('thumbnailCropCancel');
+    const thumbnailCropApply = document.getElementById('thumbnailCropApply');
+    let thumbnailCropState = null;
+
+    function openThumbnailCrop(file, fileName) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          thumbnailCropState = {
+            img,
+            fileName,
+            displayW: 0,
+            displayH: 0,
+            frameW: 0,
+            frameH: 0,
+            frameX: 0,
+            frameY: 0,
+            dragging: false,
+            startX: 0,
+            startY: 0,
+            startFrameX: 0,
+            startFrameY: 0,
+          };
+          thumbnailCropModal.classList.add('is-open');
+          thumbnailCropModal.setAttribute('aria-hidden', 'false');
+          initThumbnailCrop();
+        };
+        img.onerror = () => showToast('Görsel yüklenemedi', 'error');
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function initThumbnailCrop() {
+      const s = thumbnailCropState;
+      if (!s || !s.img) return;
+      const img = s.img;
+      const maxViewW = Math.min(560, window.innerWidth - 48);
+      const maxViewH = Math.min(320, window.innerHeight - 200);
+      let displayW = img.width;
+      let displayH = img.height;
+      if (displayW > maxViewW || displayH > maxViewH) {
+        const r = Math.min(maxViewW / displayW, maxViewH / displayH);
+        displayW = Math.round(displayW * r);
+        displayH = Math.round(displayH * r);
+      }
+      s.displayW = displayW;
+      s.displayH = displayH;
+      let frameW = Math.min(displayW, Math.round(displayH * THUMBNAIL_CROP_ASPECT));
+      let frameH = Math.round(frameW / THUMBNAIL_CROP_ASPECT);
+      if (frameH > displayH) {
+        frameH = displayH;
+        frameW = Math.round(frameH * THUMBNAIL_CROP_ASPECT);
+      }
+      s.frameW = frameW;
+      s.frameH = frameH;
+      s.frameX = Math.round((displayW - frameW) / 2);
+      s.frameY = Math.round((displayH - frameH) / 2);
+
+      thumbnailCropCanvas.width = displayW;
+      thumbnailCropCanvas.height = displayH;
+      const cropView = thumbnailCropCanvas.closest('.crop-view');
+      if (cropView) {
+        cropView.style.width = displayW + 'px';
+        cropView.style.height = displayH + 'px';
+      }
+      thumbnailCropFrame.style.width = frameW + 'px';
+      thumbnailCropFrame.style.height = frameH + 'px';
+      thumbnailCropFrame.style.left = s.frameX + 'px';
+      thumbnailCropFrame.style.top = s.frameY + 'px';
+
+      redrawThumbnailCrop();
+
+      thumbnailCropFrame.onmousedown = (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        s.dragging = true;
+        s.startX = e.clientX;
+        s.startY = e.clientY;
+        s.startFrameX = s.frameX;
+        s.startFrameY = s.frameY;
+      };
+    }
+
+    function redrawThumbnailCrop() {
+      const s = thumbnailCropState;
+      if (!s || !s.img) return;
+      const ctx = thumbnailCropCanvas.getContext('2d');
+      ctx.drawImage(s.img, 0, 0, s.displayW, s.displayH);
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      const s = thumbnailCropState;
+      if (!s || !s.dragging) return;
+      const dx = e.clientX - s.startX;
+      const dy = e.clientY - s.startY;
+      s.frameX = Math.max(0, Math.min(s.displayW - s.frameW, s.startFrameX + dx));
+      s.frameY = Math.max(0, Math.min(s.displayH - s.frameH, s.startFrameY + dy));
+      thumbnailCropFrame.style.left = s.frameX + 'px';
+      thumbnailCropFrame.style.top = s.frameY + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (thumbnailCropState) thumbnailCropState.dragging = false;
+    });
+
+    function closeThumbnailCropModal() {
+      thumbnailCropModal.classList.remove('is-open');
+      thumbnailCropModal.setAttribute('aria-hidden', 'true');
+      thumbnailCropState = null;
+      thumbnailCropFrame.onmousedown = null;
+    }
+
+    thumbnailCropCancel.addEventListener('click', () => {
+      closeThumbnailCropModal();
+      if (thumbnailFileEl) thumbnailFileEl.value = '';
+    });
+
+    thumbnailCropModal.querySelector('.crop-modal-backdrop').addEventListener('click', () => {
+      closeThumbnailCropModal();
+      if (thumbnailFileEl) thumbnailFileEl.value = '';
+    });
+
+    thumbnailCropApply.addEventListener('click', () => {
+      const s = thumbnailCropState;
+      if (!s || !s.img) return;
+      const img = s.img;
+      const sx = (s.frameX / s.displayW) * img.naturalWidth;
+      const sy = (s.frameY / s.displayH) * img.naturalHeight;
+      const sw = (s.frameW / s.displayW) * img.naturalWidth;
+      const sh = (s.frameH / s.displayH) * img.naturalHeight;
+      const outW = 1200;
+      const outH = Math.round(outW / THUMBNAIL_CROP_ASPECT);
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+      thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      if (thumbnailFileNameEl) {
+        thumbnailFileNameEl.textContent = (s.fileName || 'Thumbnail') + ' · kırpıldı, base64';
+        thumbnailFileNameEl.classList.add('has-file');
+      }
+      closeThumbnailCropModal();
+      if (thumbnailFileEl) thumbnailFileEl.value = '';
+    });
+
+    if (thumbnailFileEl) {
+      thumbnailFileEl.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        thumbnailDataUrl = null;
+        if (thumbnailFileNameEl) {
+          thumbnailFileNameEl.textContent = '';
+          thumbnailFileNameEl.classList.remove('has-file');
+        }
+        if (!file || !file.type.startsWith('image/')) return;
+        openThumbnailCrop(file, file.name);
+      });
+    }
+
+    const influencersGridMain = document.getElementById('influencersGridMain');
+    const listEmpty = document.getElementById('listEmpty');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const btnMobileMenu = document.getElementById('btnMobileMenu');
+
+    function closeSidebar() {
+      if (!sidebar || !sidebar.classList.contains('open')) return;
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('visible');
+      document.body.classList.remove('sidebar-open');
+      if (btnMobileMenu) {
+        btnMobileMenu.setAttribute('aria-expanded', 'false');
+        btnMobileMenu.setAttribute('aria-label', 'Menüyü aç');
+      }
+    }
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      sidebarOverlay.classList.add('visible');
+      document.body.classList.add('sidebar-open');
+      if (btnMobileMenu) {
+        btnMobileMenu.setAttribute('aria-expanded', 'true');
+        btnMobileMenu.setAttribute('aria-label', 'Menüyü kapat');
+      }
+    }
+
+    function setNavActive(activeId) {
+      document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+      const active = document.getElementById(activeId);
+      if (active) active.classList.add('active');
+    }
+
+    function showHeroSection() {
+      closeSidebar();
+      setNavActive('navInfluencers');
+      heroSection.classList.add('visible');
+      formSection.classList.remove('visible');
+      listSection.classList.remove('visible');
+      reportsSection.classList.remove('visible');
+      reviewsSection.classList.remove('visible');
+      detailSection.classList.remove('visible');
+      hideDetailPanel();
+    }
+
+    function showFormSection() {
+      closeSidebar();
+      setNavActive('navInfluencers');
+      heroSection.classList.remove('visible');
+      formSection.classList.add('visible');
+      listSection.classList.remove('visible');
+      reportsSection.classList.remove('visible');
+      reviewsSection.classList.remove('visible');
+      detailSection.classList.remove('visible');
+      document.querySelectorAll('.sidebar-influencer').forEach((el) => el.classList.remove('selected'));
+      selectedId = null;
+    }
+
+    function showListSection() {
+      closeSidebar();
+      setNavActive('navInfluencers');
+      heroSection.classList.remove('visible');
+      formSection.classList.remove('visible');
+      listSection.classList.add('visible');
+      reportsSection.classList.remove('visible');
+      reviewsSection.classList.remove('visible');
+      detailSection.classList.remove('visible');
+      loadInfluencersGrid();
+    }
+
+    function showReportsSection() {
+      closeSidebar();
+      setNavActive('navReports');
+      heroSection.classList.remove('visible');
+      formSection.classList.remove('visible');
+      listSection.classList.remove('visible');
+      reportsSection.classList.add('visible');
+      reviewsSection.classList.remove('visible');
+      detailSection.classList.remove('visible');
+      loadReports();
+    }
+
+    function showReviewsSection() {
+      closeSidebar();
+      setNavActive('navReviews');
+      heroSection.classList.remove('visible');
+      formSection.classList.remove('visible');
+      listSection.classList.remove('visible');
+      reportsSection.classList.remove('visible');
+      reviewsSection.classList.add('visible');
+      detailSection.classList.remove('visible');
+      loadAllReviews();
+    }
+
+    function showDetailSection() {
+      closeSidebar();
+      setNavActive('navInfluencers');
+      heroSection.classList.remove('visible');
+      formSection.classList.remove('visible');
+      listSection.classList.remove('visible');
+      reportsSection.classList.remove('visible');
+      reviewsSection.classList.remove('visible');
+      detailSection.classList.add('visible');
+    }
+
+    function showToast(message, type = 'success') {
+      toastEl.textContent = message;
+      toastEl.className = 'toast ' + type;
+      toastEl.style.display = 'block';
+      setTimeout(() => {
+        toastEl.style.display = 'none';
+      }, 3500);
+    }
+
+    function addReelRow(value = '') {
+      const row = document.createElement('div');
+      row.className = 'reel-row';
+      row.innerHTML = `
+        <input type="url" name="reel" placeholder="Reels video linki" value="${value.replace(/"/g, '&quot;')}" />
+        <button type="button" class="btn-icon btn-remove-reel" title="Kaldır" aria-label="Kaldır">×</button>
+      `;
+      row.querySelector('.btn-remove-reel').addEventListener('click', () => {
+        if (reelsList.querySelectorAll('.reel-row').length > 1) row.remove();
+      });
+      reelsList.appendChild(row);
+    }
+
+    addReelBtn.addEventListener('click', () => addReelRow());
+
+    reelsList.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn-remove-reel') && reelsList.querySelectorAll('.reel-row').length > 1) {
+        e.target.closest('.reel-row').remove();
+      }
+    });
+
+    function getReelsFromForm() {
+      return Array.from(form.querySelectorAll('input[name="reel"]'))
+        .map((input) => input.value.trim())
+        .filter(Boolean);
+    }
+
+    function resetForm() {
+      form.reset();
+      editingId = null;
+      profileImageDataUrl = null;
+      thumbnailDataUrl = null;
+      if (profileImageFileEl) profileImageFileEl.value = '';
+      if (thumbnailFileEl) thumbnailFileEl.value = '';
+      if (profileImageFileNameEl) profileImageFileNameEl.textContent = '';
+      if (thumbnailFileNameEl) thumbnailFileNameEl.textContent = '';
+      reelsList.innerHTML = '';
+      addReelRow();
+      btnSubmit.textContent = 'Influencer Ekle';
+      btnCancel.style.display = 'none';
+    }
+
+    btnCancel.addEventListener('click', resetForm);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = form.name.value.trim();
+      const username = form.username.value.trim();
+      const instagramUrl = form.instagramUrl.value.trim();
+      const profileImageUrl = profileImageDataUrl || form.profileImageUrl.value.trim() || (editingId ? existingProfileImageUrl : null) || null;
+      const thumbnailUrl = thumbnailDataUrl || form.thumbnailUrl.value.trim() || (editingId ? existingThumbnailUrl : null) || null;
+      const reels = getReelsFromForm();
+
+      if (!name) {
+        showToast('Lütfen influencer adı girin.', 'error');
+        return;
+      }
+
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<span class="loading"></span> Kaydediliyor...';
+
+      try {
+        if (editingId) {
+          const ref = doc(db, COLLECTION, editingId);
+          await updateDoc(ref, {
+            name,
+            username: username || null,
+            instagramUrl: instagramUrl || null,
+            profileImageUrl: profileImageUrl || null,
+            thumbnailUrl: thumbnailUrl || null,
+            reels: reels.length ? reels : [],
+            updatedAt: serverTimestamp(),
+          });
+          showToast('Influencer güncellendi.');
+        } else {
+          await addDoc(collection(db, COLLECTION), {
+            name,
+            username: username || null,
+            instagramUrl: instagramUrl || null,
+            profileImageUrl: profileImageUrl || null,
+            thumbnailUrl: thumbnailUrl || null,
+            reels: reels.length ? reels : [],
+            createdAt: serverTimestamp(),
+          });
+          showToast('Influencer eklendi.');
+        }
+        resetForm();
+        hideDetailPanel();
+        loadInfluencers();
+      } catch (err) {
+        console.error(err);
+        showToast('Bir hata oluştu: ' + (err.message || 'Lütfen tekrar deneyin.'), 'error');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = editingId ? 'Güncelle' : 'Influencer Ekle';
+        btnSubmit.innerHTML = btnSubmit.textContent;
+      }
+    });
+
+    const placeholderAvatar = 'https://placehold.co/44/e2e8f0/64748b?text=?';
+    const placeholderThumb = 'https://placehold.co/400x250/e2e8f0/64748b?text=Thumbnail';
+
+    function proxyImageUrl(url) {
+      if (!url || url.startsWith('data:') || url.includes('placehold.co')) return url;
+      return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&n=-1';
+    }
+    const detailPanel = document.getElementById('detailPanel');
+    const detailThumbBg = document.getElementById('detailThumbBg');
+    const detailAvatar = document.getElementById('detailAvatar');
+    const detailAvatarSmall = document.getElementById('detailAvatarSmall');
+    const detailName = document.getElementById('detailName');
+    const detailUsername = document.getElementById('detailUsername');
+    const detailThumb = document.getElementById('detailThumb');
+    const detailInstagramUrl = document.getElementById('detailInstagramUrl');
+    const detailReelsList = document.getElementById('detailReelsList');
+    const detailBtnDelete = document.getElementById('detailBtnDelete');
+    const detailBtnEdit = document.getElementById('detailBtnEdit');
+
+    let selectedId = null;
+
+    function showDetailPanel(id, data) {
+      selectedId = id;
+      document.querySelectorAll('.sidebar-influencer').forEach((el) => el.classList.remove('selected'));
+      const selectedEl = document.querySelector(`.sidebar-influencer[data-id="${id}"]`);
+      if (selectedEl) selectedEl.classList.add('selected');
+
+      const name = data.name || 'İsimsiz';
+      const username = data.username || '';
+      const instagramUrl = data.instagramUrl || '';
+      const reels = data.reels || [];
+      const profileImageUrl = data.profileImageUrl || '';
+      const thumbnailUrl = data.thumbnailUrl || '';
+      const displayUsername = username ? (username.startsWith('@') ? username : '@' + username) : '';
+
+      detailAvatar.referrerPolicy = 'no-referrer';
+      detailAvatar.src = profileImageUrl ? proxyImageUrl(profileImageUrl) : placeholderAvatar;
+      detailAvatar.onerror = () => { detailAvatar.src = placeholderAvatar; };
+      detailName.textContent = name;
+      if (displayUsername) {
+        detailUsername.innerHTML = instagramUrl
+          ? `<a href="${escapeHtml(instagramUrl)}" target="_blank" rel="noopener">${escapeHtml(displayUsername)}</a>`
+          : escapeHtml(displayUsername);
+      } else {
+        detailUsername.innerHTML = instagramUrl ? '<a href="' + escapeHtml(instagramUrl) + '" target="_blank" rel="noopener">Instagram</a>' : '';
+      }
+
+      const thumbSrc = thumbnailUrl || profileImageUrl || placeholderThumb;
+      const thumbSrcProxied = thumbSrc.includes('placehold') ? thumbSrc : proxyImageUrl(thumbSrc);
+      const avatarSrcProxied = profileImageUrl ? proxyImageUrl(profileImageUrl) : placeholderAvatar;
+
+      if (detailThumbBg) {
+        detailThumbBg.referrerPolicy = 'no-referrer';
+        detailThumbBg.src = thumbSrcProxied;
+        detailThumbBg.onerror = () => { detailThumbBg.src = placeholderThumb; };
+      }
+      detailAvatar.referrerPolicy = 'no-referrer';
+      detailAvatar.src = avatarSrcProxied;
+      detailAvatar.onerror = () => { detailAvatar.src = placeholderAvatar; };
+      if (detailAvatarSmall) {
+        detailAvatarSmall.referrerPolicy = 'no-referrer';
+        detailAvatarSmall.src = avatarSrcProxied;
+        detailAvatarSmall.onerror = () => { detailAvatarSmall.src = placeholderAvatar; };
+      }
+      detailThumb.referrerPolicy = 'no-referrer';
+      detailThumb.src = thumbSrcProxied;
+      detailThumb.onerror = () => { detailThumb.src = placeholderThumb; };
+
+      if (instagramUrl) {
+        detailInstagramUrl.innerHTML = '<a href="' + escapeHtml(instagramUrl) + '" target="_blank" rel="noopener">' + escapeHtml(instagramUrl) + '</a>';
+      } else {
+        detailInstagramUrl.textContent = '—';
+      }
+
+      detailReelsList.innerHTML = '';
+      if (reels && reels.length > 0) {
+        reels.forEach((url) => {
+          const li = document.createElement('li');
+          li.innerHTML = '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(url) + '</a>';
+          detailReelsList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = 'Reels linki yok';
+        li.style.color = 'var(--text-muted)';
+        detailReelsList.appendChild(li);
+      }
+
+      detailBtnDelete.onclick = () => deleteInfluencer(id);
+      detailBtnEdit.onclick = () => {
+        editInfluencer(id, data);
+        showFormSection();
+      };
+      showDetailSection();
+    }
+
+    function hideDetailPanel() {
+      selectedId = null;
+      document.querySelectorAll('.sidebar-influencer').forEach((el) => el.classList.remove('selected'));
+      detailSection.classList.remove('visible');
+      heroSection.classList.add('visible');
+    }
+
+    function renderSidebarInfluencer(d) {
+      const id = d.id;
+      const data = d.data();
+      const name = data.name || 'İsimsiz';
+      const username = data.username || '';
+      const profileImageUrl = data.profileImageUrl || '';
+      const displayUsername = username ? (username.startsWith('@') ? username : '@' + username) : '';
+      const item = document.createElement('div');
+      item.className = 'sidebar-influencer';
+      item.dataset.id = id;
+      item.innerHTML = `
+        <img class="sidebar-influencer-avatar" src="${profileImageUrl ? proxyImageUrl(profileImageUrl) : placeholderAvatar}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${placeholderAvatar}'" />
+        <div class="sidebar-influencer-text">
+          <div class="sidebar-influencer-name">${escapeHtml(name)}</div>
+          ${displayUsername ? `<div class="sidebar-influencer-username">${escapeHtml(displayUsername)}</div>` : ''}
+        </div>
+      `;
+      item.addEventListener('click', () => showDetailPanel(id, data));
+      return item;
+    }
+
+    function renderGridCard(d) {
+      const id = d.id;
+      const data = d.data();
+      const name = data.name || 'İsimsiz';
+      const username = data.username || '';
+      const profileImageUrl = data.profileImageUrl || '';
+      const thumbnailUrl = data.thumbnailUrl || '';
+      const displayUsername = username ? (username.startsWith('@') ? username : '@' + username) : '';
+      const card = document.createElement('div');
+      card.className = 'influencer-grid-card';
+      card.innerHTML = `
+        <img class="influencer-grid-card-thumb" src="${(thumbnailUrl || profileImageUrl) ? proxyImageUrl(thumbnailUrl || profileImageUrl) : placeholderThumb}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${placeholderThumb}'" />
+        <div class="influencer-grid-card-body">
+          <div class="influencer-grid-card-header">
+            <img class="influencer-grid-card-avatar" src="${profileImageUrl ? proxyImageUrl(profileImageUrl) : placeholderAvatar}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${placeholderAvatar}'" />
+            <div class="influencer-grid-card-name">${escapeHtml(name)}</div>
+          </div>
+          ${displayUsername ? `<div class="influencer-grid-card-username">${escapeHtml(displayUsername)}</div>` : ''}
+        </div>
+      `;
+      card.addEventListener('click', () => showDetailPanel(id, data));
+      return card;
+    }
+
+    async function loadInfluencersGrid() {
+      const existing = influencersGridMain.querySelectorAll('.influencer-grid-card');
+      existing.forEach((el) => el.remove());
+      listEmpty.style.display = 'none';
+      try {
+        const snapshot = await getDocs(collection(db, COLLECTION));
+        if (snapshot.empty) {
+          listEmpty.style.display = 'block';
+          return;
+        }
+        snapshot.docs.forEach((d) => influencersGridMain.appendChild(renderGridCard(d)));
+      } catch (err) {
+        listEmpty.style.display = 'block';
+        listEmpty.textContent = 'Liste yüklenirken hata oluştu.';
+      }
+    }
+
+    async function loadReports() {
+      if (!reportsListWrap || !reportsEmpty) return;
+      reportsListWrap.querySelectorAll('.report-card').forEach((el) => el.remove());
+      reportsEmpty.style.display = 'none';
+      try {
+        const snapshot = await getDocs(collection(db, REPORTS_COLLECTION));
+        const docs = snapshot.docs.slice().sort((a, b) => {
+          const tA = a.data().createdAt?.toMillis?.() ?? 0;
+          const tB = b.data().createdAt?.toMillis?.() ?? 0;
+          return tB - tA;
+        });
+        if (docs.length === 0) {
+          reportsEmpty.style.display = 'block';
+          reportsEmpty.textContent = 'Bekleyen rapor yok.';
+          return;
+        }
+        const infCache = {};
+        for (const d of docs) {
+          const data = d.data();
+          const id = d.id;
+          const influencerId = data.influencerId || '';
+          const reviewId = data.reviewId || '';
+          const reason = data.reason || '';
+          const description = data.description || '';
+          const reviewSummary = data.reviewSummary || '(Özet yok)';
+          const status = data.status || 'pending';
+          const createdAt = data.createdAt;
+          const date = createdAt?.toDate?.()?.toLocaleDateString?.('tr-TR') || '—';
+          const resolvedAt = data.resolvedAt?.toDate?.()?.toLocaleDateString?.('tr-TR');
+          let infName = infCache[influencerId];
+          if (infName === undefined) {
+            try {
+              const infSnap = await getDoc(doc(db, COLLECTION, influencerId));
+              infName = infSnap.exists() ? (infSnap.data().name || 'İsimsiz') : 'Bilinmeyen';
+            } catch (_) {
+              infName = 'Bilinmeyen';
+            }
+            infCache[influencerId] = infName;
+          }
+          const card = document.createElement('div');
+          card.className = 'report-card' + (status !== 'pending' ? ' resolved' : '');
+          const statusLabel = status === 'resolved_removed' ? 'İnceleme sonucu: Değerlendirme kaldırıldı' : status === 'resolved_upheld' ? 'İnceleme sonucu: Şikayet gerekçesiz bulundu' : '';
+          card.innerHTML = `
+            <div class="report-card-header">
+              <span class="report-card-influencer">${escapeHtml(infName)}</span>
+              <span class="report-card-date">${escapeHtml(date)}</span>
+              ${resolvedAt ? '<span class="report-card-date">· Sonuç: ' + escapeHtml(resolvedAt) + '</span>' : ''}
+            </div>
+            <div class="report-card-summary">${escapeHtml(reviewSummary)}</div>
+            <div class="report-card-reason">${escapeHtml(reason)}</div>
+            <div class="report-card-description">${escapeHtml(description) || '—'}</div>
+            ${status === 'pending' ? `
+            <div class="report-card-actions">
+              <button type="button" class="btn btn-danger" data-action="remove" data-report-id="${escapeHtml(id)}" data-influencer-id="${escapeHtml(influencerId)}" data-review-id="${escapeHtml(reviewId)}">İnceleme sonucu: Değerlendirmeyi kaldır</button>
+              <button type="button" class="btn btn-ghost" data-action="upheld" data-report-id="${escapeHtml(id)}">İnceleme sonucu: Şikayet gerekçesiz</button>
+            </div>
+            ` : '<div class="report-card-description" style="margin-bottom:0;color:var(--text-muted);">' + escapeHtml(statusLabel) + '</div>'}
+          `;
+          if (status === 'pending') {
+            const btnRemove = card.querySelector('[data-action="remove"]');
+            const btnUpheld = card.querySelector('[data-action="upheld"]');
+            if (btnRemove) {
+              btnRemove.addEventListener('click', async () => {
+                if (!confirm('Bu değerlendirmeyi kalıcı olarak kaldırmak istediğinize emin misiniz?')) return;
+                const rid = btnRemove.dataset.reportId;
+                const iid = btnRemove.dataset.influencerId;
+                const revid = btnRemove.dataset.reviewId;
+                try {
+                  try {
+                    await deleteDoc(doc(db, COLLECTION, iid, 'reviews', revid));
+                  } catch (_) {
+                    // Değerlendirme zaten silinmiş olabilir
+                  }
+                  await updateDoc(doc(db, REPORTS_COLLECTION, rid), { status: 'resolved_removed', resolvedAt: serverTimestamp() });
+                  showToast('Değerlendirme kaldırıldı.');
+                  loadReports();
+                } catch (err) {
+                  showToast('İşlem başarısız: ' + (err.message || 'Tekrar deneyin.'), 'error');
+                }
+              });
+            }
+            if (btnUpheld) {
+              btnUpheld.addEventListener('click', async () => {
+                const rid = btnUpheld.dataset.reportId;
+                try {
+                  await updateDoc(doc(db, REPORTS_COLLECTION, rid), { status: 'resolved_upheld', resolvedAt: serverTimestamp() });
+                  showToast('Rapor şikayet gerekçesiz olarak işaretlendi.');
+                  loadReports();
+                } catch (err) {
+                  showToast('İşlem başarısız: ' + (err.message || 'Tekrar deneyin.'), 'error');
+                }
+              });
+            }
+          }
+          reportsListWrap.appendChild(card);
+        }
+      } catch (err) {
+        console.error(err);
+        reportsEmpty.style.display = 'block';
+        reportsEmpty.textContent = 'Raporlar yüklenirken hata oluştu.';
+      }
+    }
+
+    async function loadAllReviews() {
+      if (!reviewsListWrap || !reviewsEmpty) return;
+      reviewsListWrap.querySelectorAll('.review-row').forEach((el) => el.remove());
+      reviewsEmpty.style.display = 'none';
+      try {
+        const infSnapshot = await getDocs(collection(db, COLLECTION));
+        const items = [];
+        for (const infDoc of infSnapshot.docs) {
+          const infId = infDoc.id;
+          const infName = infDoc.data().name || 'İsimsiz';
+          const reviewsSnap = await getDocs(collection(db, COLLECTION, infId, 'reviews'));
+          reviewsSnap.docs.forEach((revDoc) => {
+            const d = revDoc.data();
+            const createdAt = d.createdAt?.toMillis?.() ?? 0;
+            const date = d.createdAt?.toDate?.()?.toLocaleDateString?.('tr-TR') || '—';
+            items.push({
+              influencerId: infId,
+              influencerName: infName,
+              reviewId: revDoc.id,
+              businessName: d.businessName || '—',
+              stars: typeof d.stars === 'number' ? d.stars : 0,
+              comment: d.comment || '',
+              date,
+              createdAt,
+            });
+          });
+        }
+        items.sort((a, b) => b.createdAt - a.createdAt);
+        if (items.length === 0) {
+          reviewsEmpty.style.display = 'block';
+          reviewsEmpty.textContent = 'Henüz değerlendirme yok.';
+          return;
+        }
+        for (const item of items) {
+          const row = document.createElement('div');
+          row.className = 'review-row';
+          const starsStr = '★'.repeat(Math.min(5, Math.max(0, item.stars))) + '☆'.repeat(5 - Math.min(5, Math.max(0, item.stars)));
+          row.innerHTML = `
+            <div class="review-row-body">
+              <div class="review-row-meta">
+                <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span> · ${escapeHtml(item.date)}
+              </div>
+              <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
+              <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
+              ${item.comment ? '<div class="review-row-content" style="margin-top:0.5rem;">' + escapeHtml(item.comment) + '</div>' : ''}
+            </div>
+            <div class="review-row-actions">
+              <button type="button" class="btn btn-danger" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Kalıcı olarak sil</button>
+            </div>
+          `;
+          const btn = row.querySelector('.btn-danger');
+          if (btn) {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Bu değerlendirmeyi kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+              const infId = btn.dataset.infId;
+              const reviewId = btn.dataset.reviewId;
+              try {
+                await deleteDoc(doc(db, COLLECTION, infId, 'reviews', reviewId));
+                showToast('Değerlendirme silindi.');
+                loadAllReviews();
+              } catch (err) {
+                showToast('Silinirken hata: ' + (err.message || 'Tekrar deneyin.'), 'error');
+              }
+            });
+          }
+          reviewsListWrap.appendChild(row);
+        }
+      } catch (err) {
+        console.error(err);
+        reviewsEmpty.style.display = 'block';
+        reviewsEmpty.textContent = 'Değerlendirmeler yüklenirken hata oluştu.';
+      }
+    }
+
+    document.getElementById('sidebarBtnAdd').addEventListener('click', showFormSection);
+    document.getElementById('heroBtnAdd').addEventListener('click', showFormSection);
+    document.getElementById('navInfluencers').addEventListener('click', (e) => {
+      e.preventDefault();
+      showListSection();
+    });
+    document.getElementById('navReviews').addEventListener('click', (e) => {
+      e.preventDefault();
+      showReviewsSection();
+    });
+    document.getElementById('navReports').addEventListener('click', (e) => {
+      e.preventDefault();
+      showReportsSection();
+    });
+    document.querySelectorAll('.logo').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        showHeroSection();
+      });
+    });
+
+    if (btnMobileMenu && sidebar && sidebarOverlay) {
+      btnMobileMenu.addEventListener('click', () => {
+        const isOpen = sidebar.classList.contains('open');
+        if (isOpen) closeSidebar();
+        else openSidebar();
+      });
+      sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function editInfluencer(id, data) {
+      editingId = id;
+      profileImageDataUrl = null;
+      thumbnailDataUrl = null;
+      existingProfileImageUrl = data.profileImageUrl || null;
+      existingThumbnailUrl = data.thumbnailUrl || null;
+      if (profileImageFileEl) profileImageFileEl.value = '';
+      if (thumbnailFileEl) thumbnailFileEl.value = '';
+      if (profileImageFileNameEl) profileImageFileNameEl.textContent = '';
+      if (thumbnailFileNameEl) thumbnailFileNameEl.textContent = '';
+      form.name.value = data.name || '';
+      form.username.value = data.username || '';
+      form.instagramUrl.value = data.instagramUrl || '';
+      form.profileImageUrl.value = (data.profileImageUrl && !data.profileImageUrl.startsWith('data:')) ? data.profileImageUrl : '';
+      form.thumbnailUrl.value = (data.thumbnailUrl && !data.thumbnailUrl.startsWith('data:')) ? data.thumbnailUrl : '';
+      reelsList.innerHTML = '';
+      (data.reels && data.reels.length ? data.reels : ['']).forEach((url) => addReelRow(url));
+      btnSubmit.textContent = 'Güncelle';
+      btnCancel.style.display = 'inline-flex';
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function deleteInfluencer(id) {
+      if (!confirm('Bu influencer\'ı silmek istediğinize emin misiniz?')) return;
+      try {
+        await deleteDoc(doc(db, COLLECTION, id));
+        showToast('Influencer silindi.');
+        hideDetailPanel();
+        loadInfluencers();
+      } catch (err) {
+        showToast('Silinirken hata: ' + (err.message || 'Tekrar deneyin.'), 'error');
+      }
+    }
+
+    async function loadInfluencers() {
+      const existing = sidebarInfluencers.querySelectorAll('.sidebar-influencer');
+      existing.forEach((el) => el.remove());
+      sidebarEmpty.style.display = 'none';
+
+      try {
+        const snapshot = await getDocs(collection(db, COLLECTION));
+        if (snapshot.empty) {
+          sidebarEmpty.style.display = 'block';
+          sidebarEmpty.textContent = 'Henüz influencer yok';
+          if (heroStatCount) heroStatCount.textContent = '0';
+          return;
+        }
+        if (heroStatCount) heroStatCount.textContent = snapshot.docs.length;
+        snapshot.docs.forEach((d) => sidebarInfluencers.appendChild(renderSidebarInfluencer(d)));
+        if (listSection.classList.contains('visible')) loadInfluencersGrid();
+      } catch (err) {
+        console.error(err);
+        showToast('Liste yüklenirken hata oluştu.', 'error');
+        sidebarEmpty.style.display = 'block';
+        sidebarEmpty.textContent = 'Veriler yüklenemedi.';
+      }
+    }
+
+    loadInfluencers();
+  </script>
+</body>
+</html>

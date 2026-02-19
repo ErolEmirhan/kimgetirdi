@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# env (API anahtarları paylaşılmamalı)
+.env*.local
+
+# Next
+.next
+out
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# typescript
+next-env.d.ts
+
+# Firebase (cache)
+.firebase

@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #f8fafc;
+  --surface-elevated: #f1f5f9;
+  --surface-card: #ffffff;
+  --accent: #b8860b;
+  --accent-hover: #c9a227;
+  --muted: #64748b;
+  --primary: #0f172a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--surface);
+  color: var(--primary);
+  min-height: 100vh;
+}
+
+/* Kart hover — belirgin yükselme ve gölge */
+@layer utilities {
+  .card-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-hover:hover {
+    @apply -translate-y-3 shadow-2xl shadow-slate-400/50 ring-2 ring-slate-200;
+  }
+}
+
+/* Buton vurgu */
+.btn-primary {
+  @apply bg-accent text-white font-medium px-5 py-2.5 rounded-xl;
+  @apply hover:bg-accent-hover transition-colors duration-200;
+}
+.btn-secondary {
+  @apply bg-white text-primary font-medium px-5 py-2.5 rounded-xl border border-surface-border;
+  @apply hover:bg-surface-elevated hover:border-accent/40 transition-all duration-200;
+}
+/* Değerlendirme Yap - yeşil gradient */
+.btn-evaluate {
+  @apply text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.btn-evaluate:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+}
+
+/* Splash ekranı animasyonları */
+@keyframes splash-logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Dairesel ring — stroke-dashoffset ile çemberin dolması (r=47 → çevre ≈ 295.3) */
+@keyframes splash-circle {
+  from {
+    stroke-dashoffset: 295.3;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
