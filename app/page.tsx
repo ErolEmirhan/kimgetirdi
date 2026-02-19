@@ -10,6 +10,7 @@ import { getReviews, voteReview, getStoredVote } from "@/lib/reviews";
 import { getPlaceholderAvatar, proxyImageUrl, getInstagramAvatarUrl, getReviewerAvatarApiUrl, getInitialsAvatarUrl, normalizeInstagramUsername, getInstagramProfileUrl } from "@/lib/imageUrl";
 import { getReelEmbedUrl } from "@/lib/reelEmbed";
 import { getPriceRangeSortValue } from "@/lib/priceRange";
+import { addContactMessage } from "@/lib/contactMessages";
 import type { Influencer, Review } from "@/app/types/influencer";
 
 type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string } };
@@ -35,7 +36,15 @@ export default function Home() {
   const [hamburgerClosing, setHamburgerClosing] = useState(false);
   const [hamburgerReady, setHamburgerReady] = useState(false);
   const [currentPageLabel, setCurrentPageLabel] = useState("Ana sayfa");
-  const [currentPageIcon, setCurrentPageIcon] = useState<"home" | "sort" | "star">("home");
+  const [currentPageIcon, setCurrentPageIcon] = useState<"home" | "sort" | "star" | "contact">("home");
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactInstagram, setContactInstagram] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [allReviewsFeed, setAllReviewsFeed] = useState<FeedItem[]>([]);
   const [allReviewsFeedLoading, setAllReviewsFeedLoading] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -102,6 +111,13 @@ export default function Home() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
       </svg>
     );
+    if (type === "contact")
+      return (
+        <svg className="h-4 w-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      );
+    return null;
   };
 
   useEffect(() => {
@@ -479,14 +495,28 @@ export default function Home() {
                   {pageIcon("star")}
                   Değerlendirmeler
                 </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={() => {
+                    setPageMenuOpen(false);
+                    setCurrentPageLabel("İletişim");
+                    setCurrentPageIcon("contact");
+                    setContactError(null);
+                    setContactSuccess(false);
+                  }}
+                >
+                  {pageIcon("contact")}
+                  İletişim
+                </button>
               </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* Arama + Filtreleme — sadece Ana sayfa / grid görünümünde */}
-      {currentPageLabel !== "Değerlendirmeler" && !loading && !error && influencers.length > 0 && (
+      {/* Arama + Filtreleme — sadece Ana sayfa / grid görünümünde (İletişim ve Değerlendirmeler hariç) */}
+      {currentPageLabel !== "Değerlendirmeler" && currentPageLabel !== "İletişim" && !loading && !error && influencers.length > 0 && (
         <div id="filtreleme" className="sticky top-16 z-40 border-b border-surface-border bg-white/95 backdrop-blur-md">
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -565,7 +595,132 @@ export default function Home() {
       )}
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {currentPageLabel === "Değerlendirmeler" ? (
+        {currentPageLabel === "İletişim" ? (
+          <div className="mx-auto max-w-xl">
+            <header className="mb-8 text-center">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                İletişim
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                Soru veya önerinizi iletin; en kısa sürede size dönüş yapacağız.
+              </p>
+              <div className="mx-auto mt-5 h-px w-20 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
+            </header>
+            {contactSuccess ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+                <p className="font-medium text-emerald-800">Mesajınız alındı.</p>
+                <p className="mt-1 text-sm text-emerald-700">En kısa sürede e-posta adresiniz üzerinden size dönüş yapacağız.</p>
+                <button
+                  type="button"
+                  onClick={() => { setContactSuccess(false); setContactSubject(""); setContactMessage(""); setContactInstagram(""); setContactPhone(""); setContactEmail(""); }}
+                  className="mt-4 text-sm font-semibold text-emerald-700 hover:underline"
+                >
+                  Yeni mesaj gönder
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setContactError(null);
+                  const email = contactEmail.trim();
+                  if (!email) {
+                    setContactError("Lütfen e-posta adresinizi girin.");
+                    return;
+                  }
+                  setContactSubmitting(true);
+                  try {
+                    await addContactMessage({
+                      subject: contactSubject.trim(),
+                      message: contactMessage.trim(),
+                      instagram: contactInstagram.trim() || undefined,
+                      phone: contactPhone.trim() || undefined,
+                      email,
+                    });
+                    setContactSuccess(true);
+                  } catch (err) {
+                    setContactError(err instanceof Error ? err.message : "Mesaj gönderilemedi. Lütfen tekrar deneyin.");
+                  } finally {
+                    setContactSubmitting(false);
+                  }
+                }}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="contact-subject" className="block text-sm font-semibold text-slate-700">Konu başlığı</label>
+                    <input
+                      id="contact-subject"
+                      type="text"
+                      value={contactSubject}
+                      onChange={(e) => setContactSubject(e.target.value)}
+                      placeholder="Örn: İş birliği teklifi"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-message" className="block text-sm font-semibold text-slate-700">Mesaj</label>
+                    <textarea
+                      id="contact-message"
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      placeholder="Mesajınızı yazın..."
+                      rows={4}
+                      className="mt-1 w-full resize-y rounded-xl border border-slate-200 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-instagram" className="block text-sm font-semibold text-slate-700">Instagram hesabı <span className="font-normal text-slate-400">(opsiyonel)</span></label>
+                    <input
+                      id="contact-instagram"
+                      type="text"
+                      value={contactInstagram}
+                      onChange={(e) => setContactInstagram(e.target.value)}
+                      placeholder="@kullaniciadi"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-phone" className="block text-sm font-semibold text-slate-700">Telefon numarası <span className="font-normal text-slate-400">(opsiyonel)</span></label>
+                    <input
+                      id="contact-phone"
+                      type="tel"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+90 5XX XXX XX XX"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-email" className="block text-sm font-semibold text-slate-700">E-posta <span className="font-normal text-red-500">*</span></label>
+                    <p className="mt-0.5 text-xs text-slate-500">Size geri dönüş yapabilmemiz için e-posta adresinizi girmeniz gerekmektedir.</p>
+                    <input
+                      id="contact-email"
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="ornek@email.com"
+                      required
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                </div>
+                {contactError && (
+                  <p className="mt-4 text-sm font-medium text-red-600">{contactError}</p>
+                )}
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    disabled={contactSubmitting}
+                    className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {contactSubmitting ? "Gönderiliyor…" : "Gönder"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : currentPageLabel === "Değerlendirmeler" ? (
           <div className="mx-auto max-w-4xl">
             <header className="mb-10 text-center">
               <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">

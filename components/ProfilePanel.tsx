@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Influencer } from "@/app/types/influencer";
 import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb } from "@/lib/imageUrl";
 import { getReelEmbedUrl, isInstagramReelUrl } from "@/lib/reelEmbed";
+import ReelEmbed from "@/components/ReelEmbed";
 
 interface ProfilePanelProps {
   influencer: Influencer;
@@ -21,6 +22,15 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
   const openReelModal = (url: string) => {
     if (getReelEmbedUrl(url)) setReelModalUrl(url);
   };
+
+  useEffect(() => {
+    if (reelModalUrl) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [reelModalUrl]);
 
   const handle = influencer.handle.startsWith("@")
     ? influencer.handle
@@ -140,7 +150,7 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
         </div>
       </div>
 
-      {/* Reel modal — sade, profesyonel */}
+      {/* Reel modal — kaydırma yok; embed sağındaki scroll bar overlay ile kapatıldı */}
       {reelModalUrl && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
@@ -151,26 +161,33 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
           aria-label="Modalı kapat"
         >
           <div
-            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
+            className="relative my-auto flex w-full max-w-sm max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
+            style={{ overflowY: "hidden", overflowX: "hidden" }}
           >
             <button
               type="button"
               onClick={() => setReelModalUrl(null)}
-              className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              className="sticky top-0 right-0 float-right z-10 mt-2 mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
               aria-label="Kapat"
             >
               ×
             </button>
-            <div className="aspect-[9/16] w-full">
+            <div className="relative w-full flex-1 min-h-0 overflow-hidden clear-both">
               {getReelEmbedUrl(reelModalUrl) && (
-                <iframe
-                  src={getReelEmbedUrl(reelModalUrl)!}
-                  title="Reel oynatıcı"
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                <>
+                  <ReelEmbed
+                    embedUrl={getReelEmbedUrl(reelModalUrl)!}
+                    videoUrl={reelModalUrl}
+                    title="Reel oynatıcı"
+                    containerClassName="w-full max-w-full"
+                  />
+                  {/* Instagram embed içindeki scroll bar'ı kapatmak için sağ kenarda ince şerit */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-4 shrink-0 bg-slate-900 pointer-events-none rounded-r-2xl"
+                    aria-hidden
+                  />
+                </>
               )}
             </div>
           </div>

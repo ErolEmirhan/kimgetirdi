@@ -1,0 +1,20 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+const MOBILE_BREAKPOINT = 768;
+
+/** Mobil görünüm (iframe embed yerine "Instagram'da aç" kartı göstermek için) */
+export function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return isMobile;
+}

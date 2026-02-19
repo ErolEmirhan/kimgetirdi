@@ -6,6 +6,10 @@ node_modules
 # env (API anahtarları paylaşılmamalı)
 .env*.local
 
+# Admin panel: servis hesabı ve hesap listesi (gizli kalmalı)
+firebase-admin-key.json
+admin-accounts.json
+
 # Next
 .next
 out

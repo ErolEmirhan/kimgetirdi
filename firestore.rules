@@ -22,5 +22,10 @@ service cloud.firestore {
     match /evaluationReports/{reportId} {
       allow read, write: if true;
     }
+
+    // İletişim formu mesajları: siteden herkes oluşturabilir; yönetim paneli okur
+    match /contactMessages/{messageId} {
+      allow read, write: if true;
+    }
   }
 }
