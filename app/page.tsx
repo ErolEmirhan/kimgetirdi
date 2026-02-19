@@ -117,14 +117,21 @@ export default function Home() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [pageMenuOpen, sortDropdownOpen]);
 
-  // Splash ekranı: sayfa yüklendiğinde 2 saniye göster, sonra yumuşak kapat
+  // Splash ekranı: en fazla 2 saniye göster; veri yüklemesi biterse de hemen kapat
+  const closeSplash = useRef(() => {
+    setSplashFadeOut(true);
+    setTimeout(() => setShowSplash(false), 400);
+  }).current;
+
   useEffect(() => {
-    const t = setTimeout(() => {
-      setSplashFadeOut(true);
-      setTimeout(() => setShowSplash(false), 400);
-    }, 2000);
+    const t = setTimeout(closeSplash, 2000);
     return () => clearTimeout(t);
-  }, []);
+  }, [closeSplash]);
+
+  // Veri yüklemesi bittiğinde (veya timeout/error) splash hâlâ açıksa kapat
+  useEffect(() => {
+    if (!loading && showSplash) closeSplash();
+  }, [loading, showSplash, closeSplash]);
 
   useEffect(() => {
     if (hamburgerOpen) document.body.style.overflow = "hidden";

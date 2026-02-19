@@ -17,13 +17,20 @@ export function useInfluencers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const FETCH_TIMEOUT_MS = 20_000; // 20 saniye; aşılırsa hata göster (deploy’da env/network sorunları için)
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
         setError(null);
-        const data = await fetchInfluencers();
+        const data = await Promise.race([
+          fetchInfluencers(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Bağlantı zaman aşımı. Firebase ayarlarınızı ve internet bağlantınızı kontrol edin.")), FETCH_TIMEOUT_MS)
+          ),
+        ]);
         if (cancelled) return;
         const withStats = await Promise.all(
           data.map(async (inf) => {
