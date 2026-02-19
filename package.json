@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy:hosting": "firebase deploy --only hosting"
+    "deploy:hosting": "node scripts/copy-yonetim.js && firebase deploy --only hosting"
   },
   "dependencies": {
     "firebase": "^10.14.0",
