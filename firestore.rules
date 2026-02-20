@@ -37,5 +37,10 @@ service cloud.firestore {
     match /aggregates/influencerVotes {
       allow read, write: if true;
     }
+
+    // Cihaz başına günde 1 değerlendirme: cihaz_influencer_tarih dokümanı (transaction set için write)
+    match /deviceDailyReviews/{docId} {
+      allow read, write: if true;
+    }
   }
 }

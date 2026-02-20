@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import type { Influencer, Review } from "@/app/types/influencer";
 import { getInfluencerById } from "@/lib/influencers";
-import { addReview, getReviews, voteReview, getStoredVote } from "@/lib/reviews";
+import { addReview, getReviews, voteReview, getStoredVote, canSubmitReview } from "@/lib/reviews";
 import { addReport } from "@/lib/reports";
 import { PRICE_RANGE_OPTIONS } from "@/lib/priceRange";
 import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb, getInstagramAvatarUrl, getReviewerAvatarApiUrl, getInitialsAvatarUrl, normalizeInstagramUsername, getInstagramProfileUrl } from "@/lib/imageUrl";
@@ -64,6 +64,7 @@ export default function InfluencerProfilePage() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [votingReviewId, setVotingReviewId] = useState<string | null>(null);
+  const [canSubmitToday, setCanSubmitToday] = useState<boolean | null>(null);
   const degerlendirHandled = useRef(false);
 
   useEffect(() => {
@@ -81,6 +82,15 @@ export default function InfluencerProfilePage() {
       window.history.replaceState({}, "", `/influencer/${id}`);
     }
   }, [searchParams, id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    canSubmitReview(id)
+      .then((ok) => { if (!cancelled) setCanSubmitToday(ok); })
+      .catch(() => { if (!cancelled) setCanSubmitToday(true); });
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     if (!showReviewForm) return;
@@ -174,6 +184,7 @@ export default function InfluencerProfilePage() {
       setFormVideoUrl("");
       setFormPriceRange("");
       setShowReviewForm(false);
+      setCanSubmitToday(false);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Kayıt gönderilemedi.");
     } finally {
@@ -520,16 +531,23 @@ export default function InfluencerProfilePage() {
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => setShowReviewForm(true)}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Değerlendirme Yap
-              </button>
+              {canSubmitToday === false ? (
+                <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-800">
+                  Bu cihazdan bu influencer için bugün zaten bir değerlendirme yaptınız. Yarın tekrar deneyebilirsiniz.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={canSubmitToday === null}
+                  onClick={() => setShowReviewForm(true)}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Değerlendirme Yap
+                </button>
+              )}
             </div>
 
             <div className="mb-8 text-center">
@@ -694,14 +712,22 @@ export default function InfluencerProfilePage() {
           aria-modal="true"
           aria-labelledby="review-modal-title"
         >
-          <form
-            onSubmit={handleSubmitReview}
+          <div
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
           >
             <h3 id="review-modal-title" className="text-base font-semibold text-slate-900">
               Değerlendirme yap
             </h3>
+            {canSubmitToday === false ? (
+              <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                Bu cihazdan bu influencer için bugün zaten bir değerlendirme yaptınız. Yarın tekrar deneyebilirsiniz.
+              </p>
+            ) : (
+          <form
+            onSubmit={handleSubmitReview}
+            className="mt-4"
+          >
             <div className="mt-4">
               <p className="text-xs font-medium text-slate-600">5 üzerinden puan</p>
               <div className="mt-2 flex gap-1">
@@ -812,6 +838,8 @@ export default function InfluencerProfilePage() {
               </button>
             </div>
           </form>
+            )}
+          </div>
         </div>
       )}
 

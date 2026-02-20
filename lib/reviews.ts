@@ -1,7 +1,26 @@
-import { collection, addDoc, getDocs, doc, deleteDoc, runTransaction, serverTimestamp, type DocumentData } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, serverTimestamp, type DocumentData } from "firebase/firestore";
 import { getDb, INFLUENCERS_COLLECTION } from "./firebase";
+import { getDeviceId } from "./influencerVotes";
 import { normalizeInstagramUsername } from "./imageUrl";
 import type { Review } from "@/app/types/influencer";
+
+const DEVICE_DAILY_REVIEWS_COLLECTION = "deviceDailyReviews";
+
+/** YYYY-MM-DD (cihazın yerel tarihi) */
+function getTodayDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Bu cihaz bu influencer için bugün zaten değerlendirme yaptı mı? */
+export async function canSubmitReview(influencerId: string): Promise<boolean> {
+  const deviceId = getDeviceId();
+  if (!deviceId) return true;
+  const db = getDb();
+  const ref = doc(db, DEVICE_DAILY_REVIEWS_COLLECTION, `${deviceId}_${influencerId}_${getTodayDateString()}`);
+  const snap = await getDoc(ref);
+  return !snap.exists();
+}
 
 const REVIEWS_SUBCOLLECTION = "reviews";
 const VOTE_STORAGE_PREFIX = "kg-vote-";
@@ -39,31 +58,46 @@ function buildReviewerAvatarUrl(instagramHandle: string | undefined): string | n
   return `https://unavatar.io/instagram/${encodeURIComponent(username)}`;
 }
 
-/** Influencer'a değerlendirme ekler, Firestore'a yazar */
+const ONE_REVIEW_PER_DEVICE_PER_DAY_MESSAGE =
+  "Bu cihazdan bu influencer için bugün zaten bir değerlendirme yapıldı. Yarın tekrar deneyebilirsiniz.";
+
+/** Influencer'a değerlendirme ekler, Firestore'a yazar. Cihaz başına günde 1 değerlendirme. */
 export async function addReview(
   influencerId: string,
   input: ReviewInput
 ): Promise<Review> {
   const db = getDb();
+  const deviceId = getDeviceId();
+  const dateStr = getTodayDateString();
   const instagramHandle = input.instagramHandle?.trim() || null;
   const reviewerAvatarUrl = buildReviewerAvatarUrl(instagramHandle ?? undefined);
 
-  const col = collection(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION);
-  const ref = await addDoc(col, {
-    businessName: input.businessName.trim(),
-    stars: Math.min(5, Math.max(1, input.stars)),
-    comment: input.comment?.trim() || null,
-    instagramHandle,
-    reviewerAvatarUrl,
-    videoUrl: input.videoUrl?.trim() || null,
-    priceRange: input.priceRange?.trim() || null,
-    likeCount: 0,
-    dislikeCount: 0,
-    createdAt: serverTimestamp(),
+  const reviewCol = collection(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION);
+  const reviewRef = doc(reviewCol);
+  const dailyRef = doc(db, DEVICE_DAILY_REVIEWS_COLLECTION, `${deviceId}_${influencerId}_${dateStr}`);
+
+  await runTransaction(db, async (tx) => {
+    const dailySnap = await tx.get(dailyRef);
+    if (dailySnap.exists()) throw new Error(ONE_REVIEW_PER_DEVICE_PER_DAY_MESSAGE);
+
+    tx.set(reviewRef, {
+      businessName: input.businessName.trim(),
+      stars: Math.min(5, Math.max(1, input.stars)),
+      comment: input.comment?.trim() || null,
+      instagramHandle,
+      reviewerAvatarUrl,
+      videoUrl: input.videoUrl?.trim() || null,
+      priceRange: input.priceRange?.trim() || null,
+      likeCount: 0,
+      dislikeCount: 0,
+      createdAt: serverTimestamp(),
+    });
+    tx.set(dailyRef, { createdAt: serverTimestamp() });
   });
+
   const date = new Date().toLocaleDateString("tr-TR");
   return {
-    id: ref.id,
+    id: reviewRef.id,
     businessName: input.businessName.trim(),
     stars: input.stars,
     comment: input.comment?.trim() || "",
