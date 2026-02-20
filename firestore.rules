@@ -27,5 +27,15 @@ service cloud.firestore {
     match /contactMessages/{messageId} {
       allow read, write: if true;
     }
+
+    // Sıralama oylaması: her cihaz tek oy (deviceVotes doc id = cihaz id)
+    match /deviceVotes/{deviceId} {
+      allow read, write: if true;
+    }
+
+    // Sıralama toplam oy sayıları (canlı güncelleme)
+    match /aggregates/influencerVotes {
+      allow read, write: if true;
+    }
   }
 }

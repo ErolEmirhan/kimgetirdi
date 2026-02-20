@@ -11,6 +11,8 @@ import { getPlaceholderAvatar, proxyImageUrl, getInstagramAvatarUrl, getReviewer
 import { getReelEmbedUrl } from "@/lib/reelEmbed";
 import { getPriceRangeSortValue } from "@/lib/priceRange";
 import { addContactMessage } from "@/lib/contactMessages";
+import { setInfluencerVote, subscribeVoteCounts, subscribeMyVote } from "@/lib/influencerVotes";
+import { motion } from "framer-motion";
 import type { Influencer, Review } from "@/app/types/influencer";
 
 type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string } };
@@ -52,8 +54,20 @@ export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashFadeOut, setSplashFadeOut] = useState(false);
   const [splashLogoError, setSplashLogoError] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+  const [myVote, setMyVote] = useState<string | null>(null);
+  const [voteActionLoading, setVoteActionLoading] = useState<string | null>(null);
   const pageMenuRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubCounts = subscribeVoteCounts(setVoteCounts);
+    const unsubMy = subscribeMyVote(setMyVote);
+    return () => {
+      unsubCounts();
+      unsubMy();
+    };
+  }, []);
 
   useEffect(() => {
     if (currentPageLabel !== "Değerlendirmeler" || !influencers.length) return;
@@ -425,14 +439,24 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="flex items-center gap-3 font-display text-xl font-extrabold tracking-tight">
+            <Link
+              href="/"
+              onClick={(e) => {
+                setCurrentPageLabel("Ana sayfa");
+                setCurrentPageIcon("home");
+                setPageMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex items-center gap-3 font-display text-xl font-extrabold tracking-tight text-slate-900 no-underline hover:opacity-90"
+              aria-label="Ana sayfaya dön"
+            >
               <span>
                 <span className="text-slate-900">Kim</span>
                 <span className="bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent" style={{ WebkitTextFillColor: "transparent" }}>
                   Getirdi
                 </span>
               </span>
-            </h1>
+            </Link>
           </div>
           <div className="relative flex w-max flex-col shrink-0 -mt-2.5" ref={pageMenuRef}>
             {/* En uzun sayfa ismi kadar genişlik için görünmez referans (dikey yer kaplamaz) */}
@@ -475,7 +499,6 @@ export default function Home() {
                     setPageMenuOpen(false);
                     setCurrentPageLabel("Sıralama");
                     setCurrentPageIcon("sort");
-                    document.getElementById("filtreleme")?.scrollIntoView({ behavior: "smooth" });
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
@@ -514,8 +537,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Arama + Filtreleme — sadece Ana sayfa / grid görünümünde (İletişim ve Değerlendirmeler hariç) */}
-      {currentPageLabel !== "Değerlendirmeler" && currentPageLabel !== "İletişim" && !loading && !error && influencers.length > 0 && (
+      {/* Arama + Filtreleme — sadece Ana sayfada (Sıralama / Değerlendirmeler / İletişim hariç) */}
+      {currentPageLabel === "Ana sayfa" && !loading && !error && influencers.length > 0 && (
         <div id="filtreleme" className="sticky top-16 z-40 border-b border-surface-border bg-white/95 backdrop-blur-md">
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -717,6 +740,103 @@ export default function Home() {
                   </button>
                 </div>
               </form>
+            )}
+          </div>
+        ) : currentPageLabel === "Sıralama" ? (
+          <div className="mx-auto max-w-2xl">
+            <header className="mb-10 text-center">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                Sıralama
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                Favori influencer&apos;ınıza oy verin. Her cihaz tek oy kullanabilir; tıklayarak oy verir veya geri alırsınız.
+              </p>
+              <div className="mx-auto mt-5 h-px w-20 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
+            </header>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                <p className="mt-4 text-sm font-medium">Liste yükleniyor...</p>
+              </div>
+            ) : error || influencers.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+                <p className="font-medium text-slate-600">Henüz influencer yok</p>
+                <p className="mt-1 text-sm text-slate-500">Sıralama için önce influencer eklenmiş olmalıdır.</p>
+              </div>
+            ) : (
+              <motion.ul
+                className="space-y-3"
+                layout
+                transition={{ layout: { type: "spring", stiffness: 350, damping: 32 } }}
+              >
+                {[...influencers]
+                  .map((inf) => ({ ...inf, votes: voteCounts[inf.id] ?? 0 }))
+                  .sort((a, b) => b.votes - a.votes)
+                  .map((inf, index) => {
+                    const rank = index + 1;
+                    const isVoted = myVote === inf.id;
+                    const isUpdating = voteActionLoading === inf.id;
+                    return (
+                      <motion.li
+                        key={inf.id}
+                        layout
+                        transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                        className="list-none"
+                      >
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setVoteActionLoading(inf.id);
+                            try {
+                              await setInfluencerVote(inf.id);
+                            } finally {
+                              setVoteActionLoading(null);
+                            }
+                          }}
+                          disabled={isUpdating}
+                          className={`group flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left shadow-sm transition-all duration-200 sm:px-5 sm:py-4 ${
+                            isVoted
+                              ? "border-emerald-400 bg-gradient-to-r from-emerald-50 to-green-50 shadow-emerald-500/10"
+                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
+                          } ${isUpdating ? "opacity-70" : ""}`}
+                        >
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-500 group-hover:bg-slate-200">
+                            {rank}
+                          </span>
+                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border-2 border-white shadow-md ring-1 ring-slate-200">
+                            <img
+                              src={inf.avatar ? proxyImageUrl(inf.avatar) : getPlaceholderAvatar()}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.src = getPlaceholderAvatar();
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-slate-900">{inf.name}</p>
+                            {inf.handle && (
+                              <p className="truncate text-xs text-slate-500">
+                                {inf.handle.startsWith("@") ? inf.handle : `@${inf.handle}`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span
+                              className={`inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg px-2.5 text-sm font-bold tabular-nums ${
+                                isVoted ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {isUpdating ? "…" : inf.votes}
+                            </span>
+                            <span className="text-xs font-medium text-slate-400">oy</span>
+                          </div>
+                        </button>
+                      </motion.li>
+                    );
+                  })}
+              </motion.ul>
             )}
           </div>
         ) : currentPageLabel === "Değerlendirmeler" ? (
