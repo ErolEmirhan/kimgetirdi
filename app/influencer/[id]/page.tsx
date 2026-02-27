@@ -277,6 +277,7 @@ export default function InfluencerProfilePage() {
   const handleStr = influencer.handle?.startsWith("@")
     ? influencer.handle
     : "@" + (influencer.handle ?? "");
+  const isBrandFront = influencer.brandFront === true;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -319,7 +320,13 @@ export default function InfluencerProfilePage() {
               </span>
             </span>
             <span className={`shrink-0 ${headerSolid ? "text-slate-400" : "text-white/70"}`}>·</span>
-            <span className="inline-flex w-max max-w-[110px] items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-purple-600 px-2.5 py-1 font-display text-xs font-bold leading-tight text-white shadow-sm sm:max-w-[130px]">
+            <span
+              className={`inline-flex w-max max-w-[110px] items-center justify-center rounded-full px-2.5 py-1 font-display text-xs font-bold leading-tight text-white shadow-sm sm:max-w-[130px] ${
+                isBrandFront
+                  ? "bg-gradient-to-r from-red-500 via-red-600 to-rose-600"
+                  : "bg-gradient-to-r from-violet-600 to-purple-600"
+              }`}
+            >
               <span className="line-clamp-2 break-words text-center">{influencer.name}</span>
             </span>
           </Link>
@@ -350,11 +357,24 @@ export default function InfluencerProfilePage() {
             e.currentTarget.src = getPlaceholderThumb();
           }}
         />
-        {/* Tek geçişli, sade yeşil gradient — alttan üste yumuşak saydamlaşma */}
+        {/* Thumbnail overlay — Marka Önyüzü'nde kırmızı gradient */}
         <div
-          className="absolute inset-0 bg-gradient-to-t from-emerald-950/70 via-emerald-950/10 to-transparent"
+          className={`absolute inset-0 ${
+            isBrandFront
+              ? "bg-gradient-to-t from-red-950/75 via-red-950/15 to-transparent"
+              : "bg-gradient-to-t from-emerald-950/70 via-emerald-950/10 to-transparent"
+          }`}
           aria-hidden
         />
+        {/* Marka Önyüzü rozeti — soldan gömülü, sağa doğru etiket */}
+        {isBrandFront && (
+          <div className="absolute left-0 top-[72%] z-10 -translate-y-1/2">
+            <span className="inline-flex items-center gap-2 rounded-r-xl border-y border-r border-white/40 bg-gradient-to-r from-red-500 via-red-600 to-rose-600 py-2.5 pl-6 pr-5 font-display text-sm font-bold tracking-wide text-white shadow-lg shadow-red-500/30 ring-2 ring-white/30 ring-offset-2 ring-offset-transparent backdrop-blur-sm">
+              <span aria-hidden>★</span>
+              Marka Önyüzü
+            </span>
+          </div>
+        )}
         <div className="absolute bottom-0 left-0 right-0 flex flex-wrap items-end justify-between gap-4 p-4 sm:p-6">
           <div className="flex items-end gap-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-lg sm:h-20 sm:w-20">

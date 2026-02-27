@@ -35,6 +35,7 @@ function docToInfluencer(id: string, data: DocumentData): Influencer {
     engagement: data.engagement ?? undefined,
     instagramUrl: typeof data.instagramUrl === "string" ? data.instagramUrl : undefined,
     reels: normalizeReels(data.reels),
+    brandFront: data.brandFront === true,
   };
 }
 
@@ -45,8 +46,14 @@ export async function fetchInfluencers(): Promise<Influencer[]> {
   const snapshot = await getDocs(col);
 
   const docs = [...snapshot.docs].sort((a, b) => {
-    const tA = a.data().createdAt?.toMillis?.() ?? 0;
-    const tB = b.data().createdAt?.toMillis?.() ?? 0;
+    const aData = a.data();
+    const bData = b.data();
+    const aFront = aData.brandFront === true;
+    const bFront = bData.brandFront === true;
+    if (aFront && !bFront) return -1;
+    if (!aFront && bFront) return 1;
+    const tA = aData.createdAt?.toMillis?.() ?? 0;
+    const tB = bData.createdAt?.toMillis?.() ?? 0;
     return tB - tA;
   });
   return docs.map((d) => docToInfluencer(d.id, d.data()));

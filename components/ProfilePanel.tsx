@@ -150,10 +150,10 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
         </div>
       </div>
 
-      {/* Reel modal — kaydırma yok; embed sağındaki scroll bar overlay ile kapatıldı */}
+      {/* Reel modal — içerik viewport'a sığar, modal içi kaydırma yok */}
       {reelModalUrl && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex h-dvh items-center justify-center overflow-hidden bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => setReelModalUrl(null)}
           role="button"
           tabIndex={0}
@@ -161,30 +161,38 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
           aria-label="Modalı kapat"
         >
           <div
-            className="relative my-auto flex w-full max-w-sm max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
+            className="relative flex max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
-            style={{ overflowY: "hidden", overflowX: "hidden" }}
           >
             <button
               type="button"
               onClick={() => setReelModalUrl(null)}
-              className="sticky top-0 right-0 float-right z-10 mt-2 mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              className="absolute right-2 top-2 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
               aria-label="Kapat"
             >
               ×
             </button>
-            <div className="relative w-full flex-1 min-h-0 overflow-hidden clear-both">
+            <div className="relative flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden p-2 pt-10">
               {getReelEmbedUrl(reelModalUrl) && (
                 <>
-                  <ReelEmbed
-                    embedUrl={getReelEmbedUrl(reelModalUrl)!}
-                    videoUrl={reelModalUrl}
-                    title="Reel oynatıcı"
-                    containerClassName="w-full max-w-full"
-                  />
-                  {/* Instagram embed içindeki scroll bar'ı kapatmak için sağ kenarda ince şerit */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-4 shrink-0 bg-slate-900 pointer-events-none rounded-r-2xl"
+                    className="w-full max-w-full overflow-hidden rounded-2xl"
+                    style={{
+                      aspectRatio: "9/16",
+                      maxHeight: "min(calc(90dvh - 4rem), calc(100dvh - 5rem))",
+                    }}
+                  >
+                    <iframe
+                      src={getReelEmbedUrl(reelModalUrl)!}
+                      title="Reel oynatıcı"
+                      className="h-full w-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ overflow: "hidden" }}
+                    />
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-4 shrink-0 rounded-r-2xl bg-slate-900 pointer-events-none"
                     aria-hidden
                   />
                 </>

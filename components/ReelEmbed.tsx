@@ -64,13 +64,16 @@ export default function ReelEmbed({
 
         {mobileOverlayOpen && (
           <div
-            className="fixed inset-0 z-[100] flex flex-col bg-black"
+            className="fixed inset-0 z-[100] flex h-dvh flex-col overflow-hidden bg-black"
             role="dialog"
             aria-modal="true"
             aria-label="Video oynatıcı"
           >
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 pt-12">
-              <div className="relative h-full w-full max-h-[60vh] max-w-[min(100%,400px)] flex-1 min-h-0" style={{ aspectRatio: "9/16" }}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 overflow-hidden p-4 pt-12">
+              <div
+                className="relative h-auto w-full max-w-[min(100%,400px)] shrink-0 overflow-hidden"
+                style={{ aspectRatio: "9/16", maxHeight: "min(60vh, calc(100dvh - 11rem))" }}
+              >
                 <iframe
                   key={embedUrl + "-overlay"}
                   src={embedUrl}
@@ -81,14 +84,14 @@ export default function ReelEmbed({
                   style={{ overflow: "hidden" }}
                 />
               </div>
-              <p className="text-center text-xs text-white/60 px-4">
+              <p className="shrink-0 text-center text-xs text-white/60 px-4">
                 Video donuyorsa aşağıdaki bağlantıdan Instagram’da açabilirsiniz.
               </p>
               <a
                 href={videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/30"
+                className="shrink-0 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/30"
               >
                 Instagram’da aç
               </a>

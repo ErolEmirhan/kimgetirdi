@@ -42,5 +42,10 @@ service cloud.firestore {
     match /deviceDailyReviews/{docId} {
       allow read, write: if true;
     }
+
+    // Günlük site ziyaret sayacı: ana site yazar (increment), yönetim okur
+    match /dailyVisits/{dateId} {
+      allow read, write: if true;
+    }
   }
 }

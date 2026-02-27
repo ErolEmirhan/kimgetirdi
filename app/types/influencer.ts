@@ -22,6 +22,8 @@ export interface Influencer {
   reviewCount?: number;
   /** Tahmini fiyat aralığı (değerlendirmelerdeki priceRange verisine göre hesaplanır) */
   estimatedPriceRange?: string;
+  /** Marka önyüzü: true ise listede her zaman en üstte, premium çerçeve ve etiket ile gösterilir */
+  brandFront?: boolean;
 }
 
 /** Profil sayfasında kullanılan değerlendirme */

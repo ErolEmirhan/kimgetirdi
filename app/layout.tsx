@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import VisitTracker from "@/components/VisitTracker";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${outfit.variable} ${plusJakarta.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <VisitTracker />
+        {children}
+      </body>
     </html>
   );
 }

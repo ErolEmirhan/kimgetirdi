@@ -202,20 +202,26 @@ export default function Home() {
         )
       : [...influencers];
 
+    const brandFrontFirst = list.filter((i) => i.brandFront);
+    const rest = list.filter((i) => !i.brandFront);
+
     if (sort === "rating") {
-      list.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
+      rest.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
     } else if (sort === "reviews") {
-      list.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
+      rest.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
     } else if (sort === "name-az") {
-      list.sort((a, b) => a.name.localeCompare(b.name, "tr"));
+      rest.sort((a, b) => a.name.localeCompare(b.name, "tr"));
     } else if (sort === "name-za") {
-      list.sort((a, b) => b.name.localeCompare(a.name, "tr"));
+      rest.sort((a, b) => b.name.localeCompare(a.name, "tr"));
     } else if (sort === "price-desc") {
-      list.sort((a, b) => getPriceRangeSortValue(b.estimatedPriceRange) - getPriceRangeSortValue(a.estimatedPriceRange));
+      rest.sort((a, b) => getPriceRangeSortValue(b.estimatedPriceRange) - getPriceRangeSortValue(a.estimatedPriceRange));
     } else if (sort === "price-asc") {
-      list.sort((a, b) => getPriceRangeSortValue(a.estimatedPriceRange) - getPriceRangeSortValue(b.estimatedPriceRange));
+      rest.sort((a, b) => getPriceRangeSortValue(a.estimatedPriceRange) - getPriceRangeSortValue(b.estimatedPriceRange));
+    } else {
+      rest.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
     }
-    return list;
+
+    return [...brandFrontFirst, ...rest];
   }, [influencers, search, sort]);
 
   const handleIncele = (id: string) => {
@@ -360,12 +366,16 @@ export default function Home() {
                 <p className="px-4 py-6 text-center text-sm text-slate-500">Henüz influencer yok</p>
               ) : (
                 <ul className="px-3 py-2">
-                  {[...influencers]
-                    .sort((a, b) => a.name.localeCompare(b.name, "tr"))
-                    .map((inf, index) => {
+                  {(() => {
+                    const brandFrontFirst = influencers.filter((i) => i.brandFront);
+                    const rest = influencers.filter((i) => !i.brandFront);
+                    rest.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
+                    const sorted = [...brandFrontFirst, ...rest];
+                    return sorted.map((inf, index) => {
                       const handleStr = inf.handle.startsWith("@") ? inf.handle : `@${inf.handle}`;
                       const avatarSrc = inf.avatar ? proxyImageUrl(inf.avatar) : getPlaceholderAvatar();
                       const rating = inf.avgRating != null ? Math.min(5, Math.max(0, inf.avgRating)) : null;
+                      const isBrandFront = inf.brandFront;
                       return (
                         <Fragment key={inf.id}>
                           {index > 0 && (
@@ -380,9 +390,13 @@ export default function Home() {
                             <Link
                               href={`/influencer/${inf.id}`}
                               onClick={() => setHamburgerClosing(true)}
-                              className="flex items-center gap-3 rounded-xl px-3 py-3.5 text-left transition hover:bg-slate-100/80"
+                              className={`flex items-center gap-3 rounded-xl px-3 py-3.5 text-left transition ${
+                                isBrandFront
+                                  ? "border border-red-300/80 bg-gradient-to-r from-red-50 to-rose-50 hover:from-red-100 hover:to-rose-100 ring-1 ring-red-200/60"
+                                  : "hover:bg-slate-100/80"
+                              }`}
                             >
-                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                            <div className={`h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ${isBrandFront ? "ring-red-300/80 bg-red-100/50" : "bg-slate-100 ring-slate-200"}`}>
                               <img
                                 src={avatarSrc}
                                 alt=""
@@ -394,7 +408,14 @@ export default function Home() {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate font-semibold text-slate-900">{inf.name}</p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="truncate font-semibold text-slate-900">{inf.name}</p>
+                                {isBrandFront && (
+                                  <span className="shrink-0 rounded-md border border-red-400/60 bg-gradient-to-r from-red-500 to-rose-600 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-white shadow shadow-red-500/30">
+                                    Marka Önyüzü
+                                  </span>
+                                )}
+                              </div>
                               <p className="truncate text-xs text-slate-500">{handleStr}</p>
                               {rating != null && (
                                 <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
@@ -409,14 +430,15 @@ export default function Home() {
                                 </p>
                               )}
                             </div>
-                            <svg className="h-4 w-4 shrink-0 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`h-4 w-4 shrink-0 ${isBrandFront ? "text-red-400/70" : "text-slate-300"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </Link>
                           </li>
                         </Fragment>
                       );
-                    })}
+                    });
+                  })()}
                 </ul>
               )}
             </div>
@@ -1027,15 +1049,20 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 sm:gap-10">
-                    {filteredAndSorted.map((influencer, index) => (
-                      <InfluencerCard
-                        key={influencer.id}
-                        influencer={influencer}
-                        rank={index + 1}
-                        onIncele={handleIncele}
-                        onDegerlendir={handleDegerlendir}
-                      />
-                    ))}
+                    {filteredAndSorted.map((influencer, index) => {
+                      const rank = influencer.brandFront
+                        ? undefined
+                        : filteredAndSorted.slice(0, index).filter((i) => !i.brandFront).length + 1;
+                      return (
+                        <InfluencerCard
+                          key={influencer.id}
+                          influencer={influencer}
+                          rank={rank}
+                          onIncele={handleIncele}
+                          onDegerlendir={handleDegerlendir}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </>
