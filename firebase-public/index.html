@@ -289,6 +289,30 @@
       margin-bottom: 0.5rem;
     }
 
+    .sidebar-btn-refresh-images {
+      display: block;
+      width: calc(100% - 1.5rem);
+      margin: 0.25rem 0.75rem 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sidebar-btn-refresh-images:hover {
+      background: rgba(16, 185, 129, 0.2);
+      color: #059669;
+    }
+    .sidebar-btn-refresh-images:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .sidebar-list-title {
       font-family: 'Outfit', sans-serif;
       font-size: 0.75rem;
@@ -1300,6 +1324,9 @@
     .dashboard-card--messages .dashboard-card-accent {
       background: linear-gradient(180deg, #64748b 0%, #475569 50%, #334155 100%);
     }
+    .dashboard-card--visits .dashboard-card-accent {
+      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+    }
     .dashboard-card-inner {
       flex: 1;
       padding: 0.875rem 1rem 0.875rem 1.125rem;
@@ -1340,6 +1367,10 @@
     .dashboard-card--messages .dashboard-card-icon {
       background: rgba(100, 116, 139, 0.18);
       color: #475569;
+    }
+    .dashboard-card--visits .dashboard-card-icon {
+      background: rgba(14, 165, 233, 0.18);
+      color: #0284c7;
     }
     .dashboard-card-icon svg {
       width: 16px;
@@ -2834,6 +2865,9 @@
         </button>
       </nav>
       <p class="sidebar-list-title top">Kayıtlı Influencer'lar</p>
+      <button type="button" class="sidebar-btn-refresh-images" id="btnRefreshImages" title="Mevcut profil/thumbnail URL'lerini indirip base64 olarak kaydeder">
+        Tüm görselleri base64'e çevir
+      </button>
       <div class="sidebar-influencers" id="sidebarInfluencers">
         <div class="sidebar-empty" id="sidebarEmpty">Henüz influencer yok</div>
       </div>
@@ -2927,6 +2961,18 @@
                   <span class="dashboard-card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
                 </div>
               </button>
+              <div class="dashboard-card dashboard-card--visits" id="heroCardVisits" aria-label="Kimgetirdi.com site ziyaret istatistiği">
+                <div class="dashboard-card-accent" aria-hidden="true"></div>
+                <div class="dashboard-card-inner">
+                  <div class="dashboard-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </div>
+                  <div class="dashboard-card-body">
+                    <div class="dashboard-card-value" id="heroTotalVisitsCount">—</div>
+                    <div class="dashboard-card-label">Toplam site ziyareti (kimgetirdi.com)</div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="dashboard-actions">
               <button type="button" class="btn-hero btn-hero-primary btn-hero--large" id="heroBtnAdd">
@@ -3312,6 +3358,7 @@
     const heroPendingReportsCount = document.getElementById('heroPendingReportsCount');
     const heroTotalReviewsCount = document.getElementById('heroTotalReviewsCount');
     const heroMessagesCount = document.getElementById('heroMessagesCount');
+    const heroTotalVisitsCount = document.getElementById('heroTotalVisitsCount');
     const heroCardMessages = document.getElementById('heroCardMessages');
     const heroCardReports = document.getElementById('heroCardReports');
     const heroCardInfluencers = document.getElementById('heroCardInfluencers');
@@ -3642,6 +3689,17 @@
       } catch (_) {
         if (heroMessagesCount) heroMessagesCount.textContent = '—';
       }
+      try {
+        const dailyVisitsSnap = await getDocs(collection(db, 'dailyVisits'));
+        let totalVisits = 0;
+        dailyVisitsSnap.docs.forEach((d) => {
+          const n = d.data().count;
+          if (typeof n === 'number' && !Number.isNaN(n)) totalVisits += n;
+        });
+        if (heroTotalVisitsCount) heroTotalVisitsCount.textContent = String(totalVisits);
+      } catch (_) {
+        if (heroTotalVisitsCount) heroTotalVisitsCount.textContent = '—';
+      }
     }
 
     async function markMessageAsReadByCurrentUser(messageId) {
@@ -3784,6 +3842,29 @@
         .filter(Boolean);
     }
 
+    /** URL'den görseli indirip base64 data URL döndürür (kayıtta proxy'ye gerek kalmaz). */
+    async function urlToDataUrl(url) {
+      if (!url || typeof url !== 'string') return null;
+      const u = url.trim();
+      if (u.startsWith('data:') || u.includes('placehold.co')) return u;
+      if (!u.startsWith('http://') && !u.startsWith('https://')) return null;
+      const proxyUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(u) + '&n=-1';
+      try {
+        const res = await fetch(proxyUrl, { mode: 'cors' });
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (!res.ok || !ct.startsWith('image/')) return null;
+        const blob = await res.blob();
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => reject(null);
+          fr.readAsDataURL(blob);
+        });
+      } catch {
+        return null;
+      }
+    }
+
     function resetForm() {
       form.reset();
       editingId = null;
@@ -3806,8 +3887,8 @@
       const name = form.name.value.trim();
       const username = form.username.value.trim();
       const instagramUrl = form.instagramUrl.value.trim();
-      const profileImageUrl = profileImageDataUrl || form.profileImageUrl.value.trim() || (editingId ? existingProfileImageUrl : null) || null;
-      const thumbnailUrl = thumbnailDataUrl || form.thumbnailUrl.value.trim() || (editingId ? existingThumbnailUrl : null) || null;
+      let profileImageUrl = profileImageDataUrl || form.profileImageUrl.value.trim() || (editingId ? existingProfileImageUrl : null) || null;
+      let thumbnailUrl = thumbnailDataUrl || form.thumbnailUrl.value.trim() || (editingId ? existingThumbnailUrl : null) || null;
       const reels = getReelsFromForm();
 
       if (!name) {
@@ -3816,9 +3897,20 @@
       }
 
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<span class="loading"></span> Kaydediliyor...';
+      btnSubmit.innerHTML = '<span class="loading"></span> Görseller indiriliyor...';
 
       try {
+        if (profileImageUrl && profileImageUrl.startsWith('http')) {
+          const dataUrl = await urlToDataUrl(profileImageUrl);
+          if (dataUrl) profileImageUrl = dataUrl; else showToast('Profil görseli indirilemedi, URL olarak kaydediliyor.', 'warning');
+        }
+        if (thumbnailUrl && thumbnailUrl.startsWith('http')) {
+          const dataUrl = await urlToDataUrl(thumbnailUrl);
+          if (dataUrl) thumbnailUrl = dataUrl; else if (thumbnailUrl && !thumbnailUrl.startsWith('data:')) showToast('Thumbnail indirilemedi, URL olarak kaydediliyor.', 'warning');
+        }
+
+        btnSubmit.innerHTML = '<span class="loading"></span> Kaydediliyor...';
+
         if (editingId) {
           const ref = doc(db, COLLECTION, editingId);
           await updateDoc(ref, {
@@ -4517,6 +4609,54 @@
         sidebarEmpty.style.display = 'block';
         sidebarEmpty.textContent = 'Veriler yüklenemedi.';
       }
+    }
+
+    const btnRefreshImages = document.getElementById('btnRefreshImages');
+    if (btnRefreshImages) {
+      btnRefreshImages.addEventListener('click', async () => {
+        btnRefreshImages.disabled = true;
+        btnRefreshImages.textContent = 'İşleniyor...';
+        let updated = 0;
+        try {
+          const snapshot = await getDocs(collection(db, COLLECTION));
+          const total = snapshot.docs.length;
+          for (const d of snapshot.docs) {
+            const data = d.data();
+            let profileImageUrl = data.profileImageUrl || null;
+            let thumbnailUrl = data.thumbnailUrl || null;
+            const needsProfile = profileImageUrl && typeof profileImageUrl === 'string' && (profileImageUrl.startsWith('http://') || profileImageUrl.startsWith('https://'));
+            const needsThumb = thumbnailUrl && typeof thumbnailUrl === 'string' && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'));
+            if (!needsProfile && !needsThumb) continue;
+            if (needsProfile) {
+              const dataUrl = await urlToDataUrl(profileImageUrl);
+              if (dataUrl) profileImageUrl = dataUrl;
+            }
+            if (needsThumb) {
+              const dataUrl = await urlToDataUrl(thumbnailUrl);
+              if (dataUrl) thumbnailUrl = dataUrl;
+            }
+            await updateDoc(doc(db, COLLECTION, d.id), {
+              profileImageUrl: profileImageUrl || null,
+              thumbnailUrl: thumbnailUrl || null,
+              updatedAt: serverTimestamp(),
+            });
+            updated++;
+            showToast(updated + ' / ' + total + ' güncellendi...');
+          }
+          if (updated > 0) {
+            showToast('Tamamlandı. ' + updated + ' influencer görselleri base64 olarak kaydedildi.');
+            loadInfluencers();
+          } else {
+            showToast('Güncellenecek URL bulunamadı (hepsi zaten base64 veya boş).');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Hata: ' + (err.message || 'İşlem başarısız.'), 'error');
+        } finally {
+          btnRefreshImages.disabled = false;
+          btnRefreshImages.textContent = "Tüm görselleri base64'e çevir";
+        }
+      });
     }
 
     loadInfluencers();
