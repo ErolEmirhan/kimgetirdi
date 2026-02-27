@@ -61,8 +61,8 @@ export function getInitialsAvatarUrl(nameOrUsername: string | undefined, size = 
 }
 
 /**
- * Hotlink engeli olan siteler (Instagram vb.) için proxy URL.
- * placehold.co ve data: URL'leri olduğu gibi döner.
+ * Hotlink engeli olan siteler (Instagram vb.) için wsrv.nl proxy.
+ * Instagram CDN doğrudan 403 verdiği için proxy şart. placehold.co ve data: olduğu gibi.
  */
 export function proxyImageUrl(url: string | undefined): string {
   if (!url || url.startsWith("data:") || url.includes("placehold.co")) return url || PLACEHOLDER_AVATAR;
