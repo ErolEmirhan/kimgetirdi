@@ -61,8 +61,9 @@ export function getInitialsAvatarUrl(nameOrUsername: string | undefined, size = 
 }
 
 /**
- * Hotlink engeli olan siteler (Instagram vb.) için proxy URL.
- * placehold.co ve data: URL'leri olduğu gibi döner. / ile başlayan (same-origin) URL'ler dokunulmaz.
+ * Hotlink/referrer engeli için: wsrv.nl proxy kullanılıyor.
+ * Sayfada referrer="no-referrer" olduğu için production'da (kimgetirdi.com) wsrv.nl referrer görmez, görseller yüklenir.
+ * placehold.co ve data: olduğu gibi; / ile başlayan URL'ler dokunulmaz.
  */
 export function proxyImageUrl(url: string | undefined): string {
   if (!url || url.startsWith("data:") || url.includes("placehold.co")) return url || PLACEHOLDER_AVATAR;

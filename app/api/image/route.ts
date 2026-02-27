@@ -2,30 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PLACEHOLDER = "https://placehold.co/96/e2e8f0/64748b?text=?";
 
-/** İzin verilen host'lar (güvenlik: rastgele sitelere proxy yapmayalım) */
-const ALLOWED_HOSTS = [
-  "instagram.com",
-  "cdninstagram.com",
-  "fbcdn.net",
-  "unavatar.io",
-  "placehold.co",
-  "pravatar.cc",
-  "picsum.photos",
-  "i.pravatar.cc",
-  "wsrv.nl",
-  "images.weserv.nl",
-  "firebasestorage.googleapis.com",
-  "firebasestorage.app",
-  "lh3.googleusercontent.com",
-  "googleusercontent.com",
-];
-
+/** Sadece http/https ve geçerli URL; güvenlik için yanıt sadece image/* dönüyoruz */
 function isAllowedUrl(urlStr: string): boolean {
   try {
     const u = new URL(urlStr);
-    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
-    const host = u.hostname.toLowerCase();
-    return ALLOWED_HOSTS.some((allowed) => host === allowed || host.endsWith("." + allowed));
+    return u.protocol === "https:" || u.protocol === "http:";
   } catch {
     return false;
   }
