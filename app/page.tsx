@@ -374,6 +374,7 @@ export default function Home() {
                     return sorted.map((inf, index) => {
                       const handleStr = inf.handle.startsWith("@") ? inf.handle : `@${inf.handle}`;
                       const avatarSrc = inf.avatar ? proxyImageUrl(inf.avatar) : getPlaceholderAvatar();
+                      const fallbackAvatar = inf.handle ? proxyImageUrl(getInstagramAvatarUrl(inf.handle)) : getPlaceholderAvatar();
                       const rating = inf.avgRating != null ? Math.min(5, Math.max(0, inf.avgRating)) : null;
                       const isBrandFront = inf.brandFront;
                       return (
@@ -403,7 +404,12 @@ export default function Home() {
                                 className="h-full w-full object-cover"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
-                                  e.currentTarget.src = getPlaceholderAvatar();
+                                  const target = e.currentTarget;
+                                  if (inf.handle && target.src !== fallbackAvatar) {
+                                    target.src = fallbackAvatar;
+                                  } else {
+                                    target.src = getPlaceholderAvatar();
+                                  }
                                 }}
                               />
                             </div>
@@ -798,6 +804,7 @@ export default function Home() {
                     const rank = index + 1;
                     const isVoted = myVote === inf.id;
                     const isUpdating = voteActionLoading === inf.id;
+                    const fallbackAvatar = inf.handle ? proxyImageUrl(getInstagramAvatarUrl(inf.handle)) : getPlaceholderAvatar();
                     return (
                       <motion.li
                         key={inf.id}
@@ -832,7 +839,12 @@ export default function Home() {
                               className="h-full w-full object-cover"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                e.currentTarget.src = getPlaceholderAvatar();
+                                const target = e.currentTarget;
+                                if (inf.handle && target.src !== fallbackAvatar) {
+                                  target.src = fallbackAvatar;
+                                } else {
+                                  target.src = getPlaceholderAvatar();
+                                }
                               }}
                             />
                           </div>
@@ -993,7 +1005,13 @@ export default function Home() {
                               className="h-full w-full object-cover"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                e.currentTarget.src = getPlaceholderAvatar();
+                                const target = e.currentTarget;
+                                const fallback = influencer.handle ? proxyImageUrl(getInstagramAvatarUrl(influencer.handle)) : getPlaceholderAvatar();
+                                if (influencer.handle && target.src !== fallback) {
+                                  target.src = fallback;
+                                } else {
+                                  target.src = getPlaceholderAvatar();
+                                }
                               }}
                             />
                           </div>

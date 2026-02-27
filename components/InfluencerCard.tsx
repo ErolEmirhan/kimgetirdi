@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Influencer } from "@/app/types/influencer";
-import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb } from "@/lib/imageUrl";
+import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb, getInstagramAvatarUrl } from "@/lib/imageUrl";
 import { getPriceRangeShortLabel, getPriceRangeBadgeTier } from "@/lib/priceRange";
 
 interface InfluencerCardProps {
@@ -23,6 +23,9 @@ export default function InfluencerCard({
   const thumbUrl = influencer.thumbnail || influencer.avatar;
   const thumbSrc = thumbUrl ? proxyImageUrl(thumbUrl) : getPlaceholderThumb();
   const avatarSrc = influencer.avatar ? proxyImageUrl(influencer.avatar) : getPlaceholderAvatar();
+  const fallbackAvatarByHandle = influencer.handle
+    ? proxyImageUrl(getInstagramAvatarUrl(influencer.handle))
+    : getPlaceholderAvatar();
   const isBrandFront = influencer.brandFront;
   const [showCardSplash, setShowCardSplash] = useState(false);
 
@@ -72,7 +75,12 @@ export default function InfluencerCard({
           loading="lazy"
           referrerPolicy="no-referrer"
           onError={(e) => {
-            e.currentTarget.src = getPlaceholderThumb();
+            const target = e.currentTarget;
+            if (influencer.handle && target.src !== fallbackAvatarByHandle) {
+              target.src = fallbackAvatarByHandle;
+            } else {
+              target.src = getPlaceholderThumb();
+            }
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/50 via-emerald-400/25 to-emerald-300/10" />
@@ -170,7 +178,12 @@ export default function InfluencerCard({
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
-                  e.currentTarget.src = getPlaceholderAvatar();
+                  const target = e.currentTarget;
+                  if (influencer.handle && target.src !== fallbackAvatarByHandle) {
+                    target.src = fallbackAvatarByHandle;
+                  } else {
+                    target.src = getPlaceholderAvatar();
+                  }
                 }}
               />
             </div>
