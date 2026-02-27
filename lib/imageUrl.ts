@@ -62,10 +62,11 @@ export function getInitialsAvatarUrl(nameOrUsername: string | undefined, size = 
 
 /**
  * Hotlink engeli olan siteler (Instagram vb.) için proxy URL.
- * placehold.co ve data: URL'leri olduğu gibi döner.
+ * placehold.co ve data: URL'leri olduğu gibi döner. / ile başlayan (same-origin) URL'ler dokunulmaz.
  */
 export function proxyImageUrl(url: string | undefined): string {
   if (!url || url.startsWith("data:") || url.includes("placehold.co")) return url || PLACEHOLDER_AVATAR;
+  if (url.startsWith("/")) return url;
   return "https://wsrv.nl/?url=" + encodeURIComponent(url) + "&n=-1";
 }
 
