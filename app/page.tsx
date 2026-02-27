@@ -1005,13 +1005,7 @@ export default function Home() {
                               className="h-full w-full object-cover"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                const target = e.currentTarget;
-                                const fallback = influencer.handle ? proxyImageUrl(getInstagramAvatarUrl(influencer.handle)) : getPlaceholderAvatar();
-                                if (influencer.handle && target.src !== fallback) {
-                                  target.src = fallback;
-                                } else {
-                                  target.src = getPlaceholderAvatar();
-                                }
+                                e.currentTarget.src = getPlaceholderAvatar();
                               }}
                             />
                           </div>
