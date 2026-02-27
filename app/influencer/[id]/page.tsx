@@ -273,9 +273,6 @@ export default function InfluencerProfilePage() {
   const avatarSrc = influencer.avatar
     ? proxyImageUrl(influencer.avatar)
     : getPlaceholderAvatar();
-  const fallbackAvatarByHandle = influencer.handle
-    ? proxyImageUrl(getInstagramAvatarUrl(influencer.handle))
-    : getPlaceholderAvatar();
   const reels = influencer.reels ?? [];
   const handleStr = influencer.handle?.startsWith("@")
     ? influencer.handle
@@ -357,12 +354,7 @@ export default function InfluencerProfilePage() {
           className="h-full w-full object-cover object-center"
           referrerPolicy="no-referrer"
           onError={(e) => {
-            const target = e.currentTarget;
-            if (influencer.handle && target.src !== fallbackAvatarByHandle) {
-              target.src = fallbackAvatarByHandle;
-            } else {
-              target.src = getPlaceholderThumb();
-            }
+            e.currentTarget.src = getPlaceholderThumb();
           }}
         />
         {/* Thumbnail overlay — Marka Önyüzü'nde kırmızı gradient */}
@@ -392,12 +384,7 @@ export default function InfluencerProfilePage() {
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
-                  const target = e.currentTarget;
-                  if (influencer.handle && target.src !== fallbackAvatarByHandle) {
-                    target.src = fallbackAvatarByHandle;
-                  } else {
-                    target.src = getPlaceholderAvatar();
-                  }
+                  e.currentTarget.src = getPlaceholderAvatar();
                 }}
               />
             </div>

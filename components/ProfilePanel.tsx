@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Influencer } from "@/app/types/influencer";
-import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb, getInstagramAvatarUrl } from "@/lib/imageUrl";
+import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb } from "@/lib/imageUrl";
 import { getReelEmbedUrl, isInstagramReelUrl } from "@/lib/reelEmbed";
 import ReelEmbed from "@/components/ReelEmbed";
 
@@ -17,9 +17,6 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
   const thumbUrl = influencer.thumbnail || influencer.avatar;
   const thumbSrc = thumbUrl ? proxyImageUrl(thumbUrl) : getPlaceholderThumb();
   const avatarSrc = influencer.avatar ? proxyImageUrl(influencer.avatar) : getPlaceholderAvatar();
-  const fallbackAvatarByHandle = influencer.handle
-    ? proxyImageUrl(getInstagramAvatarUrl(influencer.handle))
-    : getPlaceholderAvatar();
   const reels = influencer.reels ?? [];
 
   const openReelModal = (url: string) => {
@@ -69,12 +66,7 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
             className="h-full w-full object-cover"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              const target = e.currentTarget;
-              if (influencer.handle && target.src !== fallbackAvatarByHandle) {
-                target.src = fallbackAvatarByHandle;
-              } else {
-                target.src = getPlaceholderThumb();
-              }
+              e.currentTarget.src = getPlaceholderThumb();
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
@@ -90,12 +82,7 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
-                  const target = e.currentTarget;
-                  if (influencer.handle && target.src !== fallbackAvatarByHandle) {
-                    target.src = fallbackAvatarByHandle;
-                  } else {
-                    target.src = getPlaceholderAvatar();
-                  }
+                  e.currentTarget.src = getPlaceholderAvatar();
                 }}
               />
             </div>

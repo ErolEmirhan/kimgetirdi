@@ -8,14 +8,6 @@ const nextConfig = {
       { protocol: "https", hostname: "firebasestorage.googleapis.com", pathname: "/**" },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
-      },
-    ];
-  },
 };
 
 export default nextConfig;
