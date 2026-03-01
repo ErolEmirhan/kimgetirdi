@@ -15,7 +15,7 @@ import { setInfluencerVote, subscribeVoteCounts, subscribeMyVote } from "@/lib/i
 import { motion } from "framer-motion";
 import type { Influencer, Review } from "@/app/types/influencer";
 
-type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string } };
+type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string; brandFront?: boolean } };
 
 type SortOption = "rating" | "reviews" | "name-az" | "name-za" | "price-desc" | "price-asc";
 
@@ -27,6 +27,24 @@ const SORT_OPTIONS: { value: SortOption; label: string; icon: ReactNode }[] = [
   { value: "price-desc", label: "Fiyat: Yüksekten düşüğe", icon: <svg className="h-4 w-4 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg> },
   { value: "price-asc", label: "Fiyat: Düşükten yükseğe", icon: <svg className="h-4 w-4 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg> },
 ];
+
+const VerifiedBadge = () => (
+  <span
+    className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/70"
+    aria-label="Marka önyüzü onaylı"
+  >
+    <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3" aria-hidden>
+      <circle cx="10" cy="10" r="9" className="fill-sky-500" />
+      <path
+        d="M6.5 10.3 8.9 12.7 13.5 7.8"
+        stroke="white"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </span>
+);
 
 export default function Home() {
   const router = useRouter();
@@ -78,7 +96,7 @@ export default function Home() {
         getReviews(inf.id).then((reviews) =>
           reviews.map((r) => ({
             review: r,
-            influencer: { id: inf.id, name: inf.name, avatar: inf.avatar },
+            influencer: { id: inf.id, name: inf.name, avatar: inf.avatar, brandFront: inf.brandFront },
           }))
         )
       )
@@ -409,7 +427,10 @@ export default function Home() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate font-semibold text-slate-900">{inf.name}</p>
+                                <p className="flex items-center gap-1.5 truncate font-semibold text-slate-900">
+                                  <span className="truncate">{inf.name}</span>
+                                  {isBrandFront && <VerifiedBadge />}
+                                </p>
                                 {isBrandFront && (
                                   <span className="shrink-0 rounded-md border border-red-400/60 bg-gradient-to-r from-red-500 to-rose-600 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-white shadow shadow-red-500/30">
                                     Marka Önyüzü
@@ -837,7 +858,10 @@ export default function Home() {
                             />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold text-slate-900">{inf.name}</p>
+                            <p className="flex items-center gap-1.5 truncate font-semibold text-slate-900">
+                              <span className="truncate">{inf.name}</span>
+                              {inf.brandFront && <VerifiedBadge />}
+                            </p>
                             {inf.handle && (
                               <p className="truncate text-xs text-slate-500">
                                 {inf.handle.startsWith("@") ? inf.handle : `@${inf.handle}`}
@@ -998,7 +1022,10 @@ export default function Home() {
                             />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm font-semibold text-slate-900">{influencer.name}</p>
+                            <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                              <span className="truncate">{influencer.name}</span>
+                              {influencer.brandFront && <VerifiedBadge />}
+                            </p>
                             <p className="text-xs text-slate-500">Profili görüntüle</p>
                           </div>
                           <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1014,6 +1041,18 @@ export default function Home() {
           </div>
         ) : (
           <>
+            {/* SEO: Ana sayfa H1 ve anahtar kelime zengin açıklama */}
+            {currentPageLabel === "Ana sayfa" && !loading && !error && influencers.length > 0 && (
+              <header className="mb-8 text-center" aria-label="Sayfa başlığı">
+                <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                  Influencer Değerlendirme — Kim Getirdi? Konya ve Türkiye
+                </h1>
+                <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-500">
+                  Kimgetirdi ile <strong>Konya influencer</strong> ve <strong>Türkiye influencer</strong> listesi, marka iş birliği değerlendirmeleri ve puanları. Hangi influencer kim getirdi, yorumları ve güvenilir rehber burada.
+                </p>
+                <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
+              </header>
+            )}
             {loading && (
               <div className="flex flex-col items-center justify-center py-20 text-muted">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />

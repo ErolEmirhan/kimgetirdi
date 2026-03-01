@@ -36,6 +36,24 @@ function StarRating({ value, max = 5 }: { value: number; max?: number }) {
   );
 }
 
+const VerifiedBadge = () => (
+  <span
+    className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/70"
+    aria-label="Marka önyüzü onaylı"
+  >
+    <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3" aria-hidden>
+      <circle cx="10" cy="10" r="9" className="fill-sky-500" />
+      <path
+        d="M6.5 10.3 8.9 12.7 13.5 7.8"
+        stroke="white"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </span>
+);
+
 export default function InfluencerProfilePage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -321,13 +339,14 @@ export default function InfluencerProfilePage() {
             </span>
             <span className={`shrink-0 ${headerSolid ? "text-slate-400" : "text-white/70"}`}>·</span>
             <span
-              className={`inline-flex w-max max-w-[110px] items-center justify-center rounded-full px-2.5 py-1 font-display text-xs font-bold leading-tight text-white shadow-sm sm:max-w-[130px] ${
+              className={`inline-flex w-max max-w-[110px] items-center justify-center gap-1.5 rounded-full px-2.5 py-1 font-display text-xs font-bold leading-tight text-white shadow-sm sm:max-w-[130px] ${
                 isBrandFront
                   ? "bg-gradient-to-r from-red-500 via-red-600 to-rose-600"
                   : "bg-gradient-to-r from-violet-600 to-purple-600"
               }`}
             >
               <span className="line-clamp-2 break-words text-center">{influencer.name}</span>
+              {isBrandFront && <VerifiedBadge />}
             </span>
           </Link>
         </div>
@@ -390,7 +409,10 @@ export default function InfluencerProfilePage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-white drop-shadow sm:text-2xl">
-                {influencer.name}
+                <span className="inline-flex items-center gap-1.5">
+                  <span>{influencer.name}</span>
+                  {isBrandFront && <VerifiedBadge />}
+                </span>
               </h1>
               <p className="text-sm text-white/90">{handleStr}</p>
               <p className="mt-0.5 text-xs text-white/80">{influencer.category}</p>

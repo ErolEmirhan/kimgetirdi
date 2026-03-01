@@ -26,6 +26,24 @@ export default function InfluencerCard({
   const isBrandFront = influencer.brandFront;
   const [showCardSplash, setShowCardSplash] = useState(false);
 
+  const VerifiedBadge = () => (
+    <span
+      className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/70"
+      aria-label="Marka önyüzü onaylı"
+    >
+      <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3" aria-hidden>
+        <circle cx="10" cy="10" r="9" className="fill-sky-500" />
+        <path
+          d="M6.5 10.3 8.9 12.7 13.5 7.8"
+          stroke="white"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+
   const closeSplashAndNavigate = useCallback(() => {
     setShowCardSplash(false);
     onIncele?.(influencer.id);
@@ -175,8 +193,9 @@ export default function InfluencerCard({
               />
             </div>
             <div className="min-w-0 flex-1 pb-0.5">
-              <h3 className="font-display font-semibold text-white truncate drop-shadow-sm">
-                {influencer.name}
+              <h3 className="font-display font-semibold text-white drop-shadow-sm flex items-center gap-1.5">
+                <span className="truncate">{influencer.name}</span>
+                {isBrandFront && <VerifiedBadge />}
               </h3>
               <p className="text-sm text-white/90 truncate drop-shadow-sm">
                 {influencer.handle.startsWith("@")

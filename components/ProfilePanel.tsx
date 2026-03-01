@@ -18,6 +18,25 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
   const thumbSrc = thumbUrl ? proxyImageUrl(thumbUrl) : getPlaceholderThumb();
   const avatarSrc = influencer.avatar ? proxyImageUrl(influencer.avatar) : getPlaceholderAvatar();
   const reels = influencer.reels ?? [];
+  const isBrandFront = influencer.brandFront === true;
+
+  const VerifiedBadge = () => (
+    <span
+      className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/70"
+      aria-label="Marka önyüzü onaylı"
+    >
+      <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3" aria-hidden>
+        <circle cx="10" cy="10" r="9" className="fill-sky-500" />
+        <path
+          d="M6.5 10.3 8.9 12.7 13.5 7.8"
+          stroke="white"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
 
   const openReelModal = (url: string) => {
     if (getReelEmbedUrl(url)) setReelModalUrl(url);
@@ -87,8 +106,9 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
               />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-display text-lg font-semibold text-slate-900 sm:text-xl">
-                {influencer.name}
+              <h1 className="flex items-center gap-1.5 font-display text-lg font-semibold text-slate-900 sm:text-xl">
+                <span className="truncate">{influencer.name}</span>
+                {isBrandFront && <VerifiedBadge />}
               </h1>
               <p className="truncate text-sm text-slate-500">{handle}</p>
               <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
