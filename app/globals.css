@@ -64,6 +64,38 @@ body {
   }
 }
 
+/* Apple tarzı: çok hafif, elit giriş */
+@keyframes splash-logo-apple {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Splash loading bar — şık dolum */
+@keyframes splash-loading-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Alt blok (Droje Systems + bar) — hafif gecikmeli giriş */
+@keyframes splash-subline-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Dairesel ring — stroke-dashoffset ile çemberin dolması (r=47 → çevre ≈ 295.3) */
 @keyframes splash-circle {
   from {

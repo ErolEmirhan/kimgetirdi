@@ -387,7 +387,7 @@ export default function InfluencerProfilePage() {
         />
         {/* Marka Önyüzü rozeti — soldan gömülü, sağa doğru etiket */}
         {isBrandFront && (
-          <div className="absolute left-0 top-[72%] z-10 -translate-y-1/2">
+          <div className="absolute left-0 top-[66%] z-10 -translate-y-1/2">
             <span className="inline-flex items-center gap-2 rounded-r-xl border-y border-r border-white/40 bg-gradient-to-r from-red-500 via-red-600 to-rose-600 py-2.5 pl-6 pr-5 font-display text-sm font-bold tracking-wide text-white shadow-lg shadow-red-500/30 ring-2 ring-white/30 ring-offset-2 ring-offset-transparent backdrop-blur-sm">
               <span aria-hidden>★</span>
               Marka Önyüzü

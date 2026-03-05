@@ -270,70 +270,46 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-surface">
-      {/* Splash ekranı — beyaz arka plan, logo etrafında dairesel dolum */}
+      {/* Splash — şık, profesyonel: logo + Droje Systems + loading bar */}
       {showSplash && (
         <div
-          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white transition-opacity duration-500 ease-out ${splashFadeOut ? "opacity-0" : "opacity-100"}`}
+          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fafafa] transition-opacity duration-700 ease-out ${
+            splashFadeOut ? "opacity-0" : "opacity-100"
+          }`}
           aria-hidden
         >
-          {/* Üst gradient çizgi */}
-          <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/80 to-transparent opacity-60" />
-          {/* Logo + etrafında dairesel dolum ring */}
-          <div className="relative flex items-center justify-center w-[min(90vw,300px)] h-[min(90vw,300px)] max-w-[300px] max-h-[300px]">
-            {/* Dairesel progress — logonun etrafında çember olarak dolar */}
-            <svg
-              className="absolute inset-0 w-full h-full -rotate-90 text-slate-200"
-              viewBox="0 0 100 100"
-              aria-hidden
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="47"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                className="text-slate-200"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="47"
-                fill="none"
-                stroke="url(#splash-ring-gradient)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray="295.3"
-                strokeDashoffset="295.3"
-                className="animate-[splash-circle_2s_ease-in-out_forwards]"
-              />
-              <defs>
-                <linearGradient id="splash-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#0d9488" />
-                </linearGradient>
-              </defs>
-            </svg>
-            {/* Logo — ortada, ring içinde */}
-            <div className="relative z-10 w-[min(85vw,260px)] max-w-[260px] animate-[splash-logo-in_0.8s_ease-out_both]">
+          <div className="flex flex-col items-center gap-12">
+            <div className="flex flex-col items-center justify-center animate-[splash-logo-apple_1.1s_ease-out_both]">
               {!splashLogoError ? (
                 <Image
                   src="/kimgetirdi-logo.png"
                   alt="KimGetirdi"
-                  width={280}
-                  height={140}
-                  className="h-auto w-full object-contain drop-shadow-lg"
+                  width={260}
+                  height={130}
+                  className="h-auto w-[min(80vw,260px)] object-contain"
                   priority
                   unoptimized
                   onError={() => setSplashLogoError(true)}
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 py-6 text-center">
-                  <span className="font-display text-3xl font-extrabold tracking-tight text-slate-800">
-                    Kim<span className="text-emerald-500">Getirdi</span>
-                  </span>
-                </div>
+                <span className="font-display text-4xl font-semibold tracking-tight text-slate-900">
+                  Kim<span className="text-emerald-600">Getirdi</span>
+                </span>
               )}
+            </div>
+            <div
+              className="flex flex-col items-center gap-4 animate-[splash-subline-in_0.5s_ease-out_both]"
+              style={{ animationDelay: "0.35s" }}
+            >
+              <span className="text-[12px] font-medium uppercase tracking-[0.30em] text-slate-400">
+                Droje Systems
+              </span>
+              <div className="w-[190px] overflow-hidden rounded-full bg-slate-200/80">
+                <div
+                  className="h-[3px] w-full origin-left rounded-full bg-slate-700 animate-[splash-loading-fill_2s_ease-out_forwards]"
+                  style={{ transformOrigin: "left" }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1041,18 +1017,6 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* SEO: Ana sayfa H1 ve anahtar kelime zengin açıklama */}
-            {currentPageLabel === "Ana sayfa" && !loading && !error && influencers.length > 0 && (
-              <header className="mb-8 text-center" aria-label="Sayfa başlığı">
-                <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  Influencer Değerlendirme — Kim Getirdi? Konya ve Türkiye
-                </h1>
-                <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-500">
-                  Kimgetirdi ile <strong>Konya influencer</strong> ve <strong>Türkiye influencer</strong> listesi, marka iş birliği değerlendirmeleri ve puanları. Hangi influencer kim getirdi, yorumları ve güvenilir rehber burada.
-                </p>
-                <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
-              </header>
-            )}
             {loading && (
               <div className="flex flex-col items-center justify-center py-20 text-muted">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
