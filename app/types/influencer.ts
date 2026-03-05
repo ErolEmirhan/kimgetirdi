@@ -24,6 +24,8 @@ export interface Influencer {
   estimatedPriceRange?: string;
   /** Marka önyüzü: true ise listede her zaman en üstte, premium çerçeve ve etiket ile gösterilir */
   brandFront?: boolean;
+  /** Doğrulanmış hesap: true ise mavi onay tik'i gösterilir (Marka ön yüzünden bağımsız) */
+  verified?: boolean;
 }
 
 /** Profil sayfasında kullanılan değerlendirme */

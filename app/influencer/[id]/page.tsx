@@ -296,6 +296,7 @@ export default function InfluencerProfilePage() {
     ? influencer.handle
     : "@" + (influencer.handle ?? "");
   const isBrandFront = influencer.brandFront === true;
+  const showVerifiedBadge = isBrandFront || influencer.verified === true;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -346,7 +347,7 @@ export default function InfluencerProfilePage() {
               }`}
             >
               <span className="line-clamp-2 break-words text-center">{influencer.name}</span>
-              {isBrandFront && <VerifiedBadge />}
+              {showVerifiedBadge && <VerifiedBadge />}
             </span>
           </Link>
         </div>
@@ -411,7 +412,7 @@ export default function InfluencerProfilePage() {
               <h1 className="text-xl font-semibold text-white drop-shadow sm:text-2xl">
                 <span className="inline-flex items-center gap-1.5">
                   <span>{influencer.name}</span>
-                  {isBrandFront && <VerifiedBadge />}
+                  {showVerifiedBadge && <VerifiedBadge />}
                 </span>
               </h1>
               <p className="text-sm text-white/90">{handleStr}</p>

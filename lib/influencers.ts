@@ -36,6 +36,7 @@ function docToInfluencer(id: string, data: DocumentData): Influencer {
     instagramUrl: typeof data.instagramUrl === "string" ? data.instagramUrl : undefined,
     reels: normalizeReels(data.reels),
     brandFront: data.brandFront === true,
+    verified: data.verified === true,
   };
 }
 

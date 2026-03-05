@@ -15,7 +15,7 @@ import { setInfluencerVote, subscribeVoteCounts, subscribeMyVote } from "@/lib/i
 import { motion } from "framer-motion";
 import type { Influencer, Review } from "@/app/types/influencer";
 
-type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string; brandFront?: boolean } };
+type FeedItem = { review: Review; influencer: { id: string; name: string; avatar: string; brandFront?: boolean; verified?: boolean } };
 
 type SortOption = "rating" | "reviews" | "name-az" | "name-za" | "price-desc" | "price-asc";
 
@@ -96,7 +96,7 @@ export default function Home() {
         getReviews(inf.id).then((reviews) =>
           reviews.map((r) => ({
             review: r,
-            influencer: { id: inf.id, name: inf.name, avatar: inf.avatar, brandFront: inf.brandFront },
+            influencer: { id: inf.id, name: inf.name, avatar: inf.avatar, brandFront: inf.brandFront, verified: inf.verified },
           }))
         )
       )
@@ -405,7 +405,7 @@ export default function Home() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="flex items-center gap-1.5 truncate font-semibold text-slate-900">
                                   <span className="truncate">{inf.name}</span>
-                                  {isBrandFront && <VerifiedBadge />}
+                                  {(isBrandFront || inf.verified) && <VerifiedBadge />}
                                 </p>
                                 {isBrandFront && (
                                   <span className="shrink-0 rounded-md border border-red-400/60 bg-gradient-to-r from-red-500 to-rose-600 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-white shadow shadow-red-500/30">
@@ -836,7 +836,7 @@ export default function Home() {
                           <div className="min-w-0 flex-1">
                             <p className="flex items-center gap-1.5 truncate font-semibold text-slate-900">
                               <span className="truncate">{inf.name}</span>
-                              {inf.brandFront && <VerifiedBadge />}
+                              {(inf.brandFront || inf.verified) && <VerifiedBadge />}
                             </p>
                             {inf.handle && (
                               <p className="truncate text-xs text-slate-500">
@@ -1000,7 +1000,7 @@ export default function Home() {
                           <div className="text-left">
                             <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
                               <span className="truncate">{influencer.name}</span>
-                              {influencer.brandFront && <VerifiedBadge />}
+                              {(influencer.brandFront || influencer.verified) && <VerifiedBadge />}
                             </p>
                             <p className="text-xs text-slate-500">Profili görüntüle</p>
                           </div>

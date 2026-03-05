@@ -19,11 +19,12 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
   const avatarSrc = influencer.avatar ? proxyImageUrl(influencer.avatar) : getPlaceholderAvatar();
   const reels = influencer.reels ?? [];
   const isBrandFront = influencer.brandFront === true;
+  const showVerifiedBadge = isBrandFront || influencer.verified === true;
 
   const VerifiedBadge = () => (
     <span
       className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/70"
-      aria-label="Marka önyüzü onaylı"
+      aria-label="Doğrulanmış hesap"
     >
       <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3" aria-hidden>
         <circle cx="10" cy="10" r="9" className="fill-sky-500" />
@@ -108,7 +109,7 @@ export default function ProfilePanel({ influencer, onClose }: ProfilePanelProps)
             <div className="min-w-0 flex-1">
               <h1 className="flex items-center gap-1.5 font-display text-lg font-semibold text-slate-900 sm:text-xl">
                 <span className="truncate">{influencer.name}</span>
-                {isBrandFront && <VerifiedBadge />}
+                {showVerifiedBadge && <VerifiedBadge />}
               </h1>
               <p className="truncate text-sm text-slate-500">{handle}</p>
               <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
