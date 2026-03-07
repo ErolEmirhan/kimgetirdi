@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import VisitTracker from "@/components/VisitTracker";
+import EightMart2026PopUp from "@/components/EightMart2026PopUp";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -91,6 +92,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrganization) }}
         />
         <VisitTracker />
+        <EightMart2026PopUp />
         {children}
       </body>
     </html>

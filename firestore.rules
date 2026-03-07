@@ -47,5 +47,13 @@ service cloud.firestore {
     match /dailyVisits/{dateId} {
       allow read, write: if true;
     }
+
+    // 8 Mart 2026 kalp sayacı: herkes okur/yazar; cihaz ilk tıklamada devices'a eklenir, heart count güncellenir
+    match /eightMart2026/{docId} {
+      allow read, write: if true;
+    }
+    match /eightMart2026/heart/devices/{deviceId} {
+      allow read, write: if true;
+    }
   }
 }
