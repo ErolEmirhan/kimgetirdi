@@ -4437,13 +4437,34 @@
           const starsStr = '★'.repeat(Math.min(5, Math.max(0, item.stars))) + '☆'.repeat(5 - Math.min(5, Math.max(0, item.stars)));
           const deviceId = item.deviceId;
           const isBanned = deviceId ? bannedSet.has(deviceId) : false;
-          const deviceShort = deviceId ? deviceId.substring(0, 12) + '…' : null;
+
+          // Cihaz ID chip HTML
+          let deviceChipHtml = '';
+          if (deviceId) {
+            const chipColor = isBanned ? '#dc2626' : '#2563eb';
+            const chipBg = isBanned ? '#fef2f2' : '#eff6ff';
+            const chipBorder = isBanned ? '#fca5a5' : '#bfdbfe';
+            deviceChipHtml = `
+              <span
+                class="device-id-chip"
+                data-full-id="${escapeHtml(deviceId)}"
+                title="Kopyalamak için tıkla: ${escapeHtml(deviceId)}"
+                style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;background:${chipBg};border:1px solid ${chipBorder};border-radius:6px;font-size:10.5px;font-family:monospace;font-weight:600;color:${chipColor};cursor:pointer;user-select:none;vertical-align:middle;"
+              >
+                ${isBanned ? '🚫 BANLI · ' : '<svg style="width:10px;height:10px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11V7a5 5 0 0110 0v4"/></svg> '}${escapeHtml(deviceId.substring(0, 14))}…
+                <svg style="width:10px;height:10px;flex-shrink:0;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              </span>`;
+          } else {
+            deviceChipHtml = `<span style="margin-left:8px;font-size:10.5px;color:#cbd5e1;font-style:italic;">cihaz ID yok</span>`;
+          }
 
           row.innerHTML = `
             <div class="review-row-body">
-              <div class="review-row-meta">
-                <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span> · ${escapeHtml(item.date)}
-                ${deviceShort ? `<span style="margin-left:6px;font-size:11px;color:${isBanned ? '#dc2626' : '#94a3b8'};font-family:monospace;font-weight:600;">${isBanned ? '🚫 BANLI · ' : ''}ID: ${escapeHtml(deviceShort)}</span>` : '<span style="margin-left:6px;font-size:11px;color:#cbd5e1;">(eski kayıt – cihaz ID yok)</span>'}
+              <div class="review-row-meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;">
+                <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span>
+                <span style="color:#94a3b8;margin:0 2px;">·</span>
+                <span>${escapeHtml(item.date)}</span>
+                ${deviceChipHtml}
               </div>
               <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
               <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
@@ -4452,11 +4473,26 @@
             </div>
             <div class="review-row-actions">
               ${item.reply ? '<button type="button" class="btn btn-ghost btn-reply-delete" data-inf-id="' + escapeHtml(item.influencerId) + '" data-review-id="' + escapeHtml(item.reviewId) + '">Yanıtı sil</button>' : ''}
-              ${deviceId && !isBanned ? '<button type="button" class="btn btn-ghost btn-ban-device" style="color:#dc2626;border-color:#fca5a5;" data-device-id="' + escapeHtml(deviceId) + '">Cihazı Banla</button>' : ''}
-              ${deviceId && isBanned ? '<button type="button" class="btn btn-ghost btn-unban-device" style="color:#16a34a;border-color:#86efac;" data-device-id="' + escapeHtml(deviceId) + '">Banı Kaldır</button>' : ''}
-              <button type="button" class="btn btn-danger btn-review-delete" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Kalıcı olarak sil</button>
+              ${deviceId && !isBanned ? '<button type="button" class="btn btn-danger btn-ban-device" data-device-id="' + escapeHtml(deviceId) + '">🚫 Cihazı Banla</button>' : ''}
+              ${deviceId && isBanned ? '<button type="button" class="btn btn-ghost btn-unban-device" style="color:#16a34a;border-color:#86efac;" data-device-id="' + escapeHtml(deviceId) + '">✓ Banı Kaldır</button>' : ''}
+              <button type="button" class="btn btn-danger btn-review-delete" style="background:transparent;color:#dc2626;border:1px solid #fca5a5;" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Değerlendirmeyi Sil</button>
             </div>
           `;
+
+          // Cihaz ID kopyalama
+          const deviceChip = row.querySelector('.device-id-chip');
+          if (deviceChip) {
+            deviceChip.addEventListener('click', async () => {
+              const fullId = deviceChip.dataset.fullId;
+              if (!fullId) return;
+              try {
+                await navigator.clipboard.writeText(fullId);
+                showToast('Cihaz ID kopyalandı.');
+              } catch {
+                prompt('Cihaz ID (kopyala):', fullId);
+              }
+            });
+          }
 
           // Değerlendirme silme
           const deleteBtn = row.querySelector('.btn-review-delete');
