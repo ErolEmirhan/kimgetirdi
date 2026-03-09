@@ -3033,6 +3033,38 @@
             <h2>Tüm Değerlendirmeler</h2>
             <p>Platformdaki tüm değerlendirmeler. Kalıcı olarak silmek için ilgili satırdaki butonu kullanın.</p>
           </header>
+
+          <!-- Manuel Ban Paneli -->
+          <div id="manualBanPanel" style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="font-size:0.8125rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">
+              🚫 Manuel Cihaz Ban Yönetimi
+            </div>
+            <p style="font-size:0.8125rem;color:#64748b;margin-bottom:0.875rem;">
+              Eski kayıtlarda cihaz ID olmayabilir. Cihaz ID'sini telefonun tarayıcı konsolundan
+              <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.75rem;">localStorage.getItem('kg-device-id')</code>
+              komutuyla öğrenebilirsin.
+            </p>
+            <div style="display:flex;gap:0.625rem;flex-wrap:wrap;align-items:center;">
+              <input
+                type="text"
+                id="manualBanInput"
+                placeholder="Cihaz ID yapıştır..."
+                style="flex:1;min-width:220px;max-width:400px;padding:0.5rem 0.75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:0.8125rem;font-family:monospace;outline:none;"
+              />
+              <button type="button" id="manualBanBtn" class="btn btn-danger" style="white-space:nowrap;">Cihazı Banla</button>
+              <button type="button" id="manualUnbanBtn" class="btn btn-ghost" style="color:#16a34a;border-color:#86efac;white-space:nowrap;">Banı Kaldır</button>
+            </div>
+            <div id="manualBanResult" style="margin-top:0.5rem;font-size:0.8125rem;display:none;"></div>
+
+            <!-- Banlı cihazlar listesi -->
+            <div style="margin-top:1rem;">
+              <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Banlı Cihazlar</div>
+              <div id="bannedDevicesList" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                <span style="font-size:0.8125rem;color:#94a3b8;">Yükleniyor…</span>
+              </div>
+            </div>
+          </div>
+
           <div class="reviews-list-wrap" id="reviewsListWrap">
             <div class="list-empty" id="reviewsEmpty">Değerlendirme yok.</div>
           </div>
@@ -3795,6 +3827,8 @@
       messagesSection.classList.remove('visible');
       reviewsSection.classList.add('visible');
       detailSection.classList.remove('visible');
+      setupManualBanPanel();
+      loadBannedDevicesList();
       loadAllReviews();
     }
 
@@ -4509,6 +4543,97 @@
         reviewsEmpty.textContent = 'Değerlendirmeler yüklenirken hata oluştu.';
       }
     }
+
+    // ── Manuel ban paneli kurulumu ──────────────────────────────────────────
+    async function loadBannedDevicesList() {
+      const listEl = document.getElementById('bannedDevicesList');
+      if (!listEl) return;
+      try {
+        const snap = await getDocs(collection(db, BANNED_DEVICES_COLLECTION));
+        listEl.innerHTML = '';
+        if (snap.empty) {
+          listEl.innerHTML = '<span style="font-size:0.8125rem;color:#94a3b8;">Banlı cihaz yok.</span>';
+          return;
+        }
+        snap.docs.forEach((d) => {
+          const did = d.id;
+          const bannedAt = d.data().bannedAt?.toDate?.()?.toLocaleDateString?.('tr-TR') || '—';
+          const tag = document.createElement('div');
+          tag.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-family:monospace;color:#dc2626;';
+          tag.innerHTML = `
+            <span title="${escapeHtml(did)}">🚫 ${escapeHtml(did.substring(0, 16))}… · ${bannedAt}</span>
+            <button type="button" title="Banı kaldır" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:14px;line-height:1;padding:0 0 0 4px;" data-unban-id="${escapeHtml(did)}">✕</button>
+          `;
+          tag.querySelector('[data-unban-id]').addEventListener('click', async () => {
+            if (!confirm('Yasak kaldırılacak. Emin misiniz?')) return;
+            try {
+              await deleteDoc(doc(db, BANNED_DEVICES_COLLECTION, did));
+              showToast('Yasak kaldırıldı.');
+              tag.remove();
+              if (listEl.children.length === 0) {
+                listEl.innerHTML = '<span style="font-size:0.8125rem;color:#94a3b8;">Banlı cihaz yok.</span>';
+              }
+            } catch (err) {
+              showToast('Hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
+            }
+          });
+          listEl.appendChild(tag);
+        });
+      } catch (err) {
+        listEl.innerHTML = '<span style="font-size:0.8125rem;color:#ef4444;">Yüklenemedi.</span>';
+      }
+    }
+
+    function setupManualBanPanel() {
+      const input = document.getElementById('manualBanInput');
+      const banBtn = document.getElementById('manualBanBtn');
+      const unbanBtn = document.getElementById('manualUnbanBtn');
+      const resultEl = document.getElementById('manualBanResult');
+
+      function showResult(msg, isError) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = isError ? '#dc2626' : '#16a34a';
+        resultEl.textContent = msg;
+        setTimeout(() => { resultEl.style.display = 'none'; }, 4000);
+      }
+
+      if (banBtn) {
+        banBtn.addEventListener('click', async () => {
+          const did = (input.value || '').trim();
+          if (!did) { showResult('Lütfen bir cihaz ID girin.', true); return; }
+          if (!confirm(`"${did.substring(0, 20)}…" cihazı kalıcı olarak yasaklanacak. Onaylıyor musunuz?`)) return;
+          try {
+            await setDoc(doc(db, BANNED_DEVICES_COLLECTION, did), {
+              bannedAt: serverTimestamp(),
+              deviceId: did,
+              bannedManually: true,
+            });
+            showResult('✓ Cihaz başarıyla yasaklandı.', false);
+            input.value = '';
+            loadBannedDevicesList();
+          } catch (err) {
+            showResult('Hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), true);
+          }
+        });
+      }
+
+      if (unbanBtn) {
+        unbanBtn.addEventListener('click', async () => {
+          const did = (input.value || '').trim();
+          if (!did) { showResult('Lütfen bir cihaz ID girin.', true); return; }
+          if (!confirm(`"${did.substring(0, 20)}…" cihazının yasağı kaldırılacak. Onaylıyor musunuz?`)) return;
+          try {
+            await deleteDoc(doc(db, BANNED_DEVICES_COLLECTION, did));
+            showResult('✓ Cihaz yasağı kaldırıldı.', false);
+            input.value = '';
+            loadBannedDevicesList();
+          } catch (err) {
+            showResult('Hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), true);
+          }
+        });
+      }
+    }
+    // ───────────────────────────────────────────────────────────────────────
 
     async function unbanDevice(did, unbanBtn, row, bannedSet) {
       if (!did) return;
