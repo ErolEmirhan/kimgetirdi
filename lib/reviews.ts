@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, serverTimestamp, type DocumentData } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, serverTimestamp, updateDoc, type DocumentData } from "firebase/firestore";
 import { getDb, INFLUENCERS_COLLECTION } from "./firebase";
 import { getDeviceId } from "./influencerVotes";
 import { normalizeInstagramUsername } from "./imageUrl";
@@ -90,6 +90,7 @@ export async function addReview(
       priceRange: input.priceRange?.trim() || null,
       likeCount: 0,
       dislikeCount: 0,
+      reply: null,
       createdAt: serverTimestamp(),
     });
     tx.set(dailyRef, { createdAt: serverTimestamp() });
@@ -211,5 +212,21 @@ function docToReview(id: string, data: DocumentData): Review {
     priceRange: typeof data.priceRange === "string" ? data.priceRange : undefined,
     likeCount,
     dislikeCount,
+    reply: typeof data.reply === "string" ? data.reply : undefined,
   };
+}
+
+/** Influencer'ın bir değerlendirmeye yanıt eklemesi / güncellemesi için kullanılır. */
+export async function setReviewReply(
+  influencerId: string,
+  reviewId: string,
+  replyText: string
+): Promise<void> {
+  const db = getDb();
+  const ref = doc(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION, reviewId);
+  const trimmed = replyText.trim();
+  await updateDoc(ref, {
+    reply: trimmed || null,
+    replyUpdatedAt: serverTimestamp(),
+  });
 }

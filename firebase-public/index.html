@@ -3150,7 +3150,11 @@
         <div class="detail-panel-actions">
           <button type="button" class="btn btn-danger" id="detailBtnDelete">Sil</button>
           <button type="button" class="btn btn-ghost" id="detailBtnEdit">Düzenle</button>
+<<<<<<< HEAD
           <button type="button" class="btn btn-ghost" id="detailBtnVerified" title="Mavi onay tikini aç/kapat">Doğrulanmış hesap aktif et</button>
+=======
+          <button type="button" class="btn btn-primary" id="detailBtnSetLogin">Kullanıcı adı &amp; şifre</button>
+>>>>>>> bfe0057 (Add influencer login, replies, and like UI)
         </div>
       </section>
         </section>
@@ -3967,7 +3971,11 @@
     const detailReelsList = document.getElementById('detailReelsList');
     const detailBtnDelete = document.getElementById('detailBtnDelete');
     const detailBtnEdit = document.getElementById('detailBtnEdit');
+<<<<<<< HEAD
     const detailBtnVerified = document.getElementById('detailBtnVerified');
+=======
+    const detailBtnSetLogin = document.getElementById('detailBtnSetLogin');
+>>>>>>> bfe0057 (Add influencer login, replies, and like UI)
 
     let selectedId = null;
 
@@ -4043,6 +4051,7 @@
         editInfluencer(id, data);
         showFormSection();
       };
+<<<<<<< HEAD
       const isVerified = data.verified === true;
       if (detailBtnVerified) {
         detailBtnVerified.textContent = isVerified ? 'Mavi tik kaldır' : 'Doğrulanmış hesap aktif et';
@@ -4063,6 +4072,10 @@
             if (detailBtnVerified) detailBtnVerified.disabled = false;
           }
         };
+=======
+      if (detailBtnSetLogin) {
+        detailBtnSetLogin.onclick = () => setInfluencerLogin(id, data);
+>>>>>>> bfe0057 (Add influencer login, replies, and like UI)
       }
       showDetailSection();
     }
@@ -4369,6 +4382,7 @@
               businessName: d.businessName || '—',
               stars: typeof d.stars === 'number' ? d.stars : 0,
               comment: d.comment || '',
+              reply: typeof d.reply === 'string' ? d.reply : null,
               date,
               createdAt,
             });
@@ -4395,17 +4409,41 @@
               <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
               <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
               ${item.comment ? '<div class="review-row-content" style="margin-top:0.5rem;">' + escapeHtml(item.comment) + '</div>' : ''}
+              ${item.reply ? '<div class="review-row-content review-row-reply"><strong>Yanıt:</strong> ' + escapeHtml(item.reply) + '</div>' : ''}
             </div>
             <div class="review-row-actions">
-              <button type="button" class="btn btn-danger" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Kalıcı olarak sil</button>
+              ${item.reply ? '<button type="button" class="btn btn-ghost btn-reply-delete" data-inf-id="' + escapeHtml(item.influencerId) + '" data-review-id="' + escapeHtml(item.reviewId) + '">Yanıtı sil</button>' : ''}
+              <button type="button" class="btn btn-danger btn-review-delete" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Kalıcı olarak sil</button>
             </div>
           `;
-          const btn = row.querySelector('.btn-danger');
-          if (btn) {
-            btn.addEventListener('click', () => {
-              const infId = btn.dataset.infId;
-              const reviewId = btn.dataset.reviewId;
+          const deleteBtn = row.querySelector('.btn-review-delete');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+              const infId = deleteBtn.dataset.infId;
+              const reviewId = deleteBtn.dataset.reviewId;
               openDeleteReviewModal(infId, reviewId, row);
+            });
+          }
+          const replyDeleteBtn = row.querySelector('.btn-reply-delete');
+          if (replyDeleteBtn) {
+            replyDeleteBtn.addEventListener('click', async () => {
+              const infId = replyDeleteBtn.dataset.infId;
+              const reviewId = replyDeleteBtn.dataset.reviewId;
+              if (!infId || !reviewId) return;
+              if (!confirm('Bu değerlendirmenin influencer yanıtını silmek istediğinize emin misiniz?')) return;
+              try {
+                await updateDoc(doc(db, COLLECTION, infId, 'reviews', reviewId), {
+                  reply: null,
+                  replyUpdatedAt: serverTimestamp(),
+                });
+                showToast('Yanıt silindi.');
+                // satırı güncelle: yanıt satırını ve butonu kaldır
+                const replyEl = row.querySelector('.review-row-reply');
+                if (replyEl) replyEl.remove();
+                replyDeleteBtn.remove();
+              } catch (err) {
+                showToast('Yanıt silinirken hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
+              }
             });
           }
           reviewsListWrap.appendChild(row);
@@ -4596,6 +4634,34 @@
       btnSubmit.textContent = 'Güncelle';
       btnCancel.style.display = 'inline-flex';
       form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function setInfluencerLogin(id, data) {
+      const currentUsername = (data && data.loginUsername) || '';
+      const username = prompt('Influencer giriş kullanıcı adı', currentUsername);
+      if (username === null) return;
+      const trimmedUsername = username.trim();
+      if (!trimmedUsername) {
+        showToast('Lütfen geçerli bir kullanıcı adı girin.', 'error');
+        return;
+      }
+      const password = prompt('Şifre belirleyin (en az 6 karakter)', '');
+      if (password === null) return;
+      const trimmedPassword = password.trim();
+      if (trimmedPassword.length < 6) {
+        showToast('Şifre en az 6 karakter olmalıdır.', 'error');
+        return;
+      }
+      try {
+        await updateDoc(doc(db, COLLECTION, id), {
+          loginUsername: trimmedUsername,
+          loginPassword: trimmedPassword,
+        });
+        showToast('Giriş bilgileri güncellendi.');
+        data.loginUsername = trimmedUsername;
+      } catch (err) {
+        showToast('Giriş bilgileri kaydedilemedi: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
+      }
     }
 
     async function deleteInfluencer(id) {

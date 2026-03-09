@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import type { Influencer, Review } from "@/app/types/influencer";
 import { getInfluencerById } from "@/lib/influencers";
-import { addReview, getReviews, voteReview, getStoredVote, canSubmitReview } from "@/lib/reviews";
+import { addReview, getReviews, voteReview, getStoredVote, canSubmitReview, setReviewReply } from "@/lib/reviews";
 import { addReport } from "@/lib/reports";
 import { PRICE_RANGE_OPTIONS } from "@/lib/priceRange";
 import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb, getInstagramAvatarUrl, getReviewerAvatarApiUrl, getInitialsAvatarUrl, normalizeInstagramUsername, getInstagramProfileUrl } from "@/lib/imageUrl";
 import { getReelEmbedUrl } from "@/lib/reelEmbed";
+import { getStoredInfluencerSession } from "@/lib/influencerAuth";
 
 const REPORT_REASONS = [
   { value: "fake", label: "Yanıltıcı veya sahte değerlendirme" },
@@ -84,6 +85,11 @@ export default function InfluencerProfilePage() {
   const [votingReviewId, setVotingReviewId] = useState<string | null>(null);
   const [canSubmitToday, setCanSubmitToday] = useState<boolean | null>(null);
   const degerlendirHandled = useRef(false);
+  const [canReplyAsInfluencer, setCanReplyAsInfluencer] = useState(false);
+  const [replyEditingId, setReplyEditingId] = useState<string | null>(null);
+  const [replySavingId, setReplySavingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const onScroll = () => setHeaderSolid(window.scrollY > 180);
@@ -108,6 +114,15 @@ export default function InfluencerProfilePage() {
       .then((ok) => { if (!cancelled) setCanSubmitToday(ok); })
       .catch(() => { if (!cancelled) setCanSubmitToday(true); });
     return () => { cancelled = true; };
+  }, [id]);
+
+  useEffect(() => {
+    const session = getStoredInfluencerSession();
+    if (session && session.influencerId === id) {
+      setCanReplyAsInfluencer(true);
+    } else {
+      setCanReplyAsInfluencer(false);
+    }
   }, [id]);
 
   useEffect(() => {
@@ -607,16 +622,21 @@ export default function InfluencerProfilePage() {
                 <p className="mt-4 text-sm text-slate-500">Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın.</p>
               ) : (
                 <ul className="mt-4 space-y-4">
-                  {reviews.map((r) => {
+                {reviews.map((r) => {
                     const videoEmbedUrl = r.videoUrl ? getReelEmbedUrl(r.videoUrl) : null;
                     const hasVideo = !!(videoEmbedUrl || r.videoUrl);
                     const isExpanded = expandedReviewId === r.id;
+                    const existingReply = r.reply;
+                    const draft = replyDrafts[r.id] ?? existingReply ?? "";
+                    const isReplySaving = replySavingId === r.id;
                     return (
                       <li key={r.id} className="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
                         <div>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h4 className="text-xl font-bold tracking-tight text-slate-900">{r.businessName}</h4>
-                            <StarRating value={r.stars} />
+                            <div className="text-[20px] leading-none">
+                              <StarRating value={r.stars} />
+                            </div>
                           </div>
                             <p className="mt-1.5 text-sm text-slate-600">{r.comment || "—"}</p>
                             {hasVideo && (
@@ -673,41 +693,157 @@ export default function InfluencerProfilePage() {
                                 )}
                               </>
                             )}
-                            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                            {existingReply && (
+                              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <div className="mb-1 flex items-center gap-2">
+                                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-white shadow-sm ring-1 ring-slate-200">
+                                    <img
+                                      src={avatarSrc}
+                                      alt={influencer.name}
+                                      className="h-full w-full object-cover"
+                                      referrerPolicy="no-referrer"
+                                      onError={(e) => {
+                                        e.currentTarget.src = getPlaceholderAvatar();
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex min-w-0 flex-col">
+                                    <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-900">
+                                      <span className="truncate max-w-[140px] sm:max-w-[220px]">
+                                        {influencer.name}
+                                      </span>
+                                      {isBrandFront && <VerifiedBadge />}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      Profil sahibi yanıtı
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="mt-1 whitespace-pre-line leading-relaxed">
+                                  {existingReply}
+                                </p>
+                              </div>
+                            )}
+                            {canReplyAsInfluencer && (
+                              <div className="mt-3 space-y-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyError(null);
+                                    setReplyEditingId((prev) => (prev === r.id ? null : r.id));
+                                    setReplyDrafts((prev) => ({
+                                      ...prev,
+                                      [r.id]: prev[r.id] ?? existingReply ?? "",
+                                    }));
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                                >
+                                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h11M3 6h11M3 14h7m8-4v10m0 0l-3-3m3 3l3-3" />
+                                  </svg>
+                                  {existingReply ? "Yanıtı düzenle" : "Yanıtla"}
+                                </button>
+                                {replyEditingId === r.id && (
+                                  <form
+                                    className="space-y-2"
+                                    onSubmit={async (e) => {
+                                      e.preventDefault();
+                                      if (!id) return;
+                                      setReplyError(null);
+                                      setReplySavingId(r.id);
+                                      try {
+                                        await setReviewReply(id, r.id, draft);
+                                        setReviews((prev) =>
+                                          prev.map((rv) =>
+                                            rv.id === r.id ? { ...rv, reply: draft.trim() } : rv
+                                          )
+                                        );
+                                        setReplyEditingId(null);
+                                      } catch (err) {
+                                        setReplyError(
+                                          err instanceof Error
+                                            ? err.message
+                                            : "Yanıt kaydedilemedi. Lütfen tekrar deneyin."
+                                        );
+                                      } finally {
+                                        setReplySavingId(null);
+                                      }
+                                    }}
+                                  >
+                                    <textarea
+                                      value={draft}
+                                      onChange={(e) =>
+                                        setReplyDrafts((prev) => ({
+                                          ...prev,
+                                          [r.id]: e.target.value,
+                                        }))
+                                      }
+                                      rows={3}
+                                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                      placeholder="Değerlendirmeye yanıtınızı yazın..."
+                                    />
+                                    {replyError && (
+                                      <p className="text-xs font-medium text-red-600">{replyError}</p>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="submit"
+                                        disabled={isReplySaving}
+                                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                                      >
+                                        {isReplySaving ? "Kaydediliyor…" : "Yanıtı kaydet"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setReplyEditingId(null)}
+                                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                                      >
+                                        İptal
+                                      </button>
+                                      {existingReply && (
+                                        <button
+                                          type="button"
+                                          disabled={isReplySaving}
+                                          onClick={async () => {
+                                            if (!id) return;
+                                            setReplyError(null);
+                                            setReplySavingId(r.id);
+                                            try {
+                                              await setReviewReply(id, r.id, "");
+                                              setReviews((prev) =>
+                                                prev.map((rv) =>
+                                                  rv.id === r.id ? { ...rv, reply: undefined } : rv
+                                                )
+                                              );
+                                              setReplyEditingId(null);
+                                              setReplyDrafts((prev) => {
+                                                const next = { ...prev };
+                                                delete next[r.id];
+                                                return next;
+                                              });
+                                            } catch (err) {
+                                              setReplyError(
+                                                err instanceof Error
+                                                  ? err.message
+                                                  : "Yanıt silinemedi. Lütfen tekrar deneyin."
+                                              );
+                                            } finally {
+                                              setReplySavingId(null);
+                                            }
+                                          }}
+                                          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                                        >
+                                          Yanıtı sil
+                                        </button>
+                                      )}
+                                    </div>
+                                  </form>
+                                )}
+                              </div>
+                            )}
+                            <div className="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <p className="text-xs text-slate-400">{r.date}</p>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleVote(r, "like")}
-                                    disabled={votingReviewId === r.id}
-                                    title="Beğen"
-                                    aria-label={`Beğen (${r.likeCount ?? 0})`}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                                      getStoredVote(id, r.id) === "like"
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    }`}
-                                  >
-                                    <span aria-hidden>👍</span>
-                                    <span>{r.likeCount ?? 0}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleVote(r, "dislike")}
-                                    disabled={votingReviewId === r.id}
-                                    title="Beğenme"
-                                    aria-label={`Beğenme (${r.dislikeCount ?? 0})`}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                                      getStoredVote(id, r.id) === "dislike"
-                                        ? "bg-red-100 text-red-700"
-                                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    }`}
-                                  >
-                                    <span aria-hidden>👎</span>
-                                    <span>{r.dislikeCount ?? 0}</span>
-                                  </button>
-                                </div>
                                 <button
                                   type="button"
                                   onClick={() => openReportModal(r)}
@@ -734,6 +870,34 @@ export default function InfluencerProfilePage() {
                                   <span>Instagram</span>
                                 </a>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => handleVote(r, "like")}
+                                disabled={votingReviewId === r.id}
+                                title="Beğen"
+                                aria-label={`Beğen (${r.likeCount ?? 0})`}
+                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                                  getStoredVote(id, r.id) === "like"
+                                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                                    : "border-emerald-500/70 bg-white text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                              >
+                                <svg
+                                  className={`h-4 w-4 ${
+                                    getStoredVote(id, r.id) === "like"
+                                      ? "fill-emerald-500 stroke-emerald-500"
+                                      : "fill-white stroke-emerald-500"
+                                  }`}
+                                  viewBox="0 0 24 24"
+                                  aria-hidden
+                                >
+                                  <path
+                                    d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z"
+                                    strokeWidth="1.6"
+                                  />
+                                </svg>
+                                <span className="tabular-nums">{r.likeCount ?? 0}</span>
+                              </button>
                             </div>
                         </div>
                       </li>

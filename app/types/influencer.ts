@@ -47,6 +47,8 @@ export interface Review {
   likeCount?: number;
   /** Beğenmeme sayısı (dislike) */
   dislikeCount?: number;
+  /** Influencer'ın değerlendirmeye verdiği yanıt (varsa) */
+  reply?: string;
 }
 
 /** Değerlendirme raporu (şikayet) */

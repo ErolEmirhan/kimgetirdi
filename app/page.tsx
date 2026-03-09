@@ -12,6 +12,7 @@ import { getReelEmbedUrl } from "@/lib/reelEmbed";
 import { getPriceRangeSortValue } from "@/lib/priceRange";
 import { addContactMessage } from "@/lib/contactMessages";
 import { setInfluencerVote, subscribeVoteCounts, subscribeMyVote } from "@/lib/influencerVotes";
+import { loginInfluencer, getStoredInfluencerSession, clearInfluencerSession } from "@/lib/influencerAuth";
 import { motion } from "framer-motion";
 import type { Influencer, Review } from "@/app/types/influencer";
 
@@ -75,8 +76,16 @@ export default function Home() {
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
   const [myVote, setMyVote] = useState<string | null>(null);
   const [voteActionLoading, setVoteActionLoading] = useState<string | null>(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [currentInfluencerSession, setCurrentInfluencerSession] = useState<{ id: string; username: string } | null>(null);
   const pageMenuRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     const unsubCounts = subscribeVoteCounts(setVoteCounts);
@@ -85,6 +94,20 @@ export default function Home() {
       unsubCounts();
       unsubMy();
     };
+  }, []);
+  const currentInfluencerData = useMemo(
+    () =>
+      currentInfluencerSession
+        ? influencers.find((inf) => inf.id === currentInfluencerSession.id) ?? null
+        : null,
+    [currentInfluencerSession, influencers]
+  );
+
+  useEffect(() => {
+    const existing = getStoredInfluencerSession();
+    if (existing) {
+      setCurrentInfluencerSession({ id: existing.influencerId, username: existing.loginUsername });
+    }
   }, []);
 
   useEffect(() => {
@@ -159,10 +182,15 @@ export default function Home() {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
         setSortDropdownOpen(false);
       }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
     }
-    if (pageMenuOpen || sortDropdownOpen) document.addEventListener("click", handleClickOutside);
+    if (pageMenuOpen || sortDropdownOpen || profileMenuOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
     return () => document.removeEventListener("click", handleClickOutside);
-  }, [pageMenuOpen, sortDropdownOpen]);
+  }, [pageMenuOpen, sortDropdownOpen, profileMenuOpen]);
 
   // Splash ekranı: en fazla 2 saniye göster; veri yüklemesi biterse de hemen kapat
   const closeSplash = useRef(() => {
@@ -311,6 +339,96 @@ export default function Home() {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {loginModalOpen && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          aria-modal="true"
+          role="dialog"
+          aria-label="Influencer girişi"
+          onClick={() => !loginLoading && setLoginModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-semibold text-slate-900">Influencer Giriş</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Yönetim panelinde tanımlanan kullanıcı adı ve şifre ile giriş yapın.
+            </p>
+            <form
+              className="mt-4 space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoginError(null);
+                setLoginLoading(true);
+                try {
+                  const session = await loginInfluencer(loginUsername, loginPassword);
+                  setCurrentInfluencerSession({ id: session.influencerId, username: session.loginUsername });
+                  setLoginModalOpen(false);
+                  setLoginUsername("");
+                  setLoginPassword("");
+                } catch (err) {
+                  setLoginError(err instanceof Error ? err.message : "Giriş yapılamadı. Bilgilerinizi kontrol edin.");
+                } finally {
+                  setLoginLoading(false);
+                }
+              }}
+            >
+              <div className="space-y-2">
+                <div>
+                  <label htmlFor="login-username" className="block text-xs font-medium text-slate-600">
+                    Kullanıcı adı
+                  </label>
+                  <input
+                    id="login-username"
+                    type="text"
+                    autoComplete="username"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="kullaniciadi"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="login-password" className="block text-xs font-medium text-slate-600">
+                    Şifre
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Şifreniz"
+                  />
+                </div>
+              </div>
+              {loginError && (
+                <p className="mt-2 text-xs font-medium text-red-600">{loginError}</p>
+              )}
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => !loginLoading && setLoginModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={loginLoading}
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {loginLoading ? "Giriş yapılıyor…" : "Giriş yap"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -477,7 +595,8 @@ export default function Home() {
               </span>
             </Link>
           </div>
-          <div className="relative flex w-max flex-col shrink-0 -mt-2.5" ref={pageMenuRef}>
+          <div className="flex items-center gap-3">
+            <div className="relative flex w-max flex-col shrink-0 -mt-2.5" ref={pageMenuRef}>
             {/* En uzun sayfa ismi kadar genişlik için görünmez referans (dikey yer kaplamaz) */}
             <span className="invisible flex h-0 w-max items-center gap-2.5 overflow-hidden px-3 py-2.5 text-sm font-medium" aria-hidden>
               {pageIcon("star")}
@@ -552,6 +671,72 @@ export default function Home() {
                 </button>
               </div>
             )}
+            </div>
+            <div className="relative shrink-0" ref={profileMenuRef}>
+              {currentInfluencerSession && currentInfluencerData ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setProfileMenuOpen((v) => !v)}
+                    className="flex items-center justify-center rounded-full border border-slate-200 bg-white p-0.5 shadow-sm transition hover:border-emerald-400 hover:ring-2 hover:ring-emerald-100"
+                    aria-label="Influencer menüsü"
+                  >
+                    <img
+                      src={currentInfluencerData.avatar ? proxyImageUrl(currentInfluencerData.avatar) : getPlaceholderAvatar()}
+                      alt={currentInfluencerData.name}
+                      className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.src = getPlaceholderAvatar();
+                      }}
+                    />
+                  </button>
+                  {profileMenuOpen && (
+                    <div className="absolute right-0 top-full z-50 mt-2 w-40 rounded-2xl border border-slate-200 bg-white py-1.5 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileMenuOpen(false);
+                          router.push(`/influencer/${currentInfluencerSession.id}`);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l4-4m-4 4l4 4m4-10h6a2 2 0 012 2v8a2 2 0 01-2 2h-6" />
+                        </svg>
+                        <span>Profilime git</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearInfluencerSession();
+                          setCurrentInfluencerSession(null);
+                          setProfileMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                        </svg>
+                        <span>Çıkış yap</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginModalOpen(true);
+                    setLoginError(null);
+                  }}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:text-sm"
+                >
+                  <span className="hidden sm:inline">Influencer Giriş</span>
+                  <span className="inline sm:hidden">Giriş</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -893,9 +1078,9 @@ export default function Home() {
                     >
                       <div className="min-w-0 flex-1 p-5 sm:p-6">
                         <div>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-xl font-bold tracking-tight text-slate-900">{review.businessName}</h3>
-                            <span className="inline-flex gap-0.5 text-amber-500">
+                            <span className="inline-flex gap-0.5 text-xl text-amber-500">
                               {[1, 2, 3, 4, 5].map((s) => (
                                 <span key={s}>{review.stars >= s ? "★" : "☆"}</span>
                               ))}
@@ -928,42 +1113,38 @@ export default function Home() {
                                 Videoyu aç
                               </a>
                             )}
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                            <div className="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <p className="text-xs text-slate-400">{review.date}</p>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleFeedVote(influencer.id, review, "like")}
-                                    disabled={feedVotingKey === `${influencer.id}-${review.id}`}
-                                    title="Beğen"
-                                    aria-label={`Beğen (${review.likeCount ?? 0})`}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                                      getStoredVote(influencer.id, review.id) === "like"
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    }`}
-                                  >
-                                    <span aria-hidden>👍</span>
-                                    <span>{review.likeCount ?? 0}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleFeedVote(influencer.id, review, "dislike")}
-                                    disabled={feedVotingKey === `${influencer.id}-${review.id}`}
-                                    title="Beğenme"
-                                    aria-label={`Beğenme (${review.dislikeCount ?? 0})`}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                                      getStoredVote(influencer.id, review.id) === "dislike"
-                                        ? "bg-red-100 text-red-700"
-                                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    }`}
-                                  >
-                                    <span aria-hidden>👎</span>
-                                    <span>{review.dislikeCount ?? 0}</span>
-                                  </button>
-                                </div>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => handleFeedVote(influencer.id, review, "like")}
+                                disabled={feedVotingKey === `${influencer.id}-${review.id}`}
+                                title="Beğen"
+                                aria-label={`Beğen (${review.likeCount ?? 0})`}
+                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                                  getStoredVote(influencer.id, review.id) === "like"
+                                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                                    : "border-emerald-500/70 bg-white text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                              >
+                                <svg
+                                  className={`h-4 w-4 ${
+                                    getStoredVote(influencer.id, review.id) === "like"
+                                      ? "fill-emerald-500 stroke-emerald-500"
+                                      : "fill-white stroke-emerald-500"
+                                  }`}
+                                  viewBox="0 0 24 24"
+                                  aria-hidden
+                                >
+                                  <path
+                                    d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z"
+                                    strokeWidth="1.6"
+                                  />
+                                </svg>
+                                <span className="tabular-nums">{review.likeCount ?? 0}</span>
+                              </button>
                               {review.instagramHandle && normalizeInstagramUsername(review.instagramHandle) && (
                                 <a
                                   href={getInstagramProfileUrl(review.instagramHandle)}
