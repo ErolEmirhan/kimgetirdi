@@ -5,6 +5,7 @@ import { normalizeInstagramUsername } from "./imageUrl";
 import type { Review } from "@/app/types/influencer";
 
 const DEVICE_DAILY_REVIEWS_COLLECTION = "deviceDailyReviews";
+const BANNED_DEVICES_COLLECTION = "bannedDevices";
 
 /** YYYY-MM-DD (cihazın yerel tarihi) */
 function getTodayDateString(): string {
@@ -12,11 +13,15 @@ function getTodayDateString(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Bu cihaz bu influencer için bugün zaten değerlendirme yaptı mı? */
+/** Bu cihaz bu influencer için bugün zaten değerlendirme yaptı mı? Banlı mı? */
 export async function canSubmitReview(influencerId: string): Promise<boolean> {
   const deviceId = getDeviceId();
   if (!deviceId) return true;
   const db = getDb();
+  // Kalıcı ban kontrolü
+  const banSnap = await getDoc(doc(db, BANNED_DEVICES_COLLECTION, deviceId));
+  if (banSnap.exists()) return false;
+  // Günlük limit kontrolü
   const ref = doc(db, DEVICE_DAILY_REVIEWS_COLLECTION, `${deviceId}_${influencerId}_${getTodayDateString()}`);
   const snap = await getDoc(ref);
   return !snap.exists();
@@ -75,8 +80,13 @@ export async function addReview(
   const reviewCol = collection(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION);
   const reviewRef = doc(reviewCol);
   const dailyRef = doc(db, DEVICE_DAILY_REVIEWS_COLLECTION, `${deviceId}_${influencerId}_${dateStr}`);
+  const banRef = doc(db, BANNED_DEVICES_COLLECTION, deviceId);
 
   await runTransaction(db, async (tx) => {
+    // Kalıcı ban kontrolü
+    const banSnap = await tx.get(banRef);
+    if (banSnap.exists()) throw new Error("Bu cihaz kalıcı olarak yasaklanmıştır. Değerlendirme yapılamaz.");
+    // Günlük limit kontrolü
     const dailySnap = await tx.get(dailyRef);
     if (dailySnap.exists()) throw new Error(ONE_REVIEW_PER_DEVICE_PER_DAY_MESSAGE);
 
@@ -91,6 +101,7 @@ export async function addReview(
       likeCount: 0,
       dislikeCount: 0,
       reply: null,
+      deviceId: deviceId || null,
       createdAt: serverTimestamp(),
     });
     tx.set(dailyRef, { createdAt: serverTimestamp() });
@@ -213,6 +224,7 @@ function docToReview(id: string, data: DocumentData): Review {
     likeCount,
     dislikeCount,
     reply: typeof data.reply === "string" ? data.reply : undefined,
+    deviceId: typeof data.deviceId === "string" ? data.deviceId : undefined,
   };
 }
 

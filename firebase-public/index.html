@@ -3150,11 +3150,8 @@
         <div class="detail-panel-actions">
           <button type="button" class="btn btn-danger" id="detailBtnDelete">Sil</button>
           <button type="button" class="btn btn-ghost" id="detailBtnEdit">Düzenle</button>
-<<<<<<< HEAD
           <button type="button" class="btn btn-ghost" id="detailBtnVerified" title="Mavi onay tikini aç/kapat">Doğrulanmış hesap aktif et</button>
-=======
           <button type="button" class="btn btn-primary" id="detailBtnSetLogin">Kullanıcı adı &amp; şifre</button>
->>>>>>> bfe0057 (Add influencer login, replies, and like UI)
         </div>
       </section>
         </section>
@@ -3193,6 +3190,7 @@
       getDocs,
       getDoc,
       doc,
+      setDoc,
       updateDoc,
       deleteDoc,
       serverTimestamp,
@@ -3227,6 +3225,7 @@
     const COLLECTION = 'influencers';
     const REPORTS_COLLECTION = 'evaluationReports';
     const CONTACT_MESSAGES_COLLECTION = 'contactMessages';
+    const BANNED_DEVICES_COLLECTION = 'bannedDevices';
     const ADMIN_EMAIL_SUFFIX = '@kimgetirdi.local';
 
     function usernameToEmail(username) {
@@ -3971,11 +3970,8 @@
     const detailReelsList = document.getElementById('detailReelsList');
     const detailBtnDelete = document.getElementById('detailBtnDelete');
     const detailBtnEdit = document.getElementById('detailBtnEdit');
-<<<<<<< HEAD
     const detailBtnVerified = document.getElementById('detailBtnVerified');
-=======
     const detailBtnSetLogin = document.getElementById('detailBtnSetLogin');
->>>>>>> bfe0057 (Add influencer login, replies, and like UI)
 
     let selectedId = null;
 
@@ -4051,7 +4047,6 @@
         editInfluencer(id, data);
         showFormSection();
       };
-<<<<<<< HEAD
       const isVerified = data.verified === true;
       if (detailBtnVerified) {
         detailBtnVerified.textContent = isVerified ? 'Mavi tik kaldır' : 'Doğrulanmış hesap aktif et';
@@ -4072,10 +4067,9 @@
             if (detailBtnVerified) detailBtnVerified.disabled = false;
           }
         };
-=======
+      }
       if (detailBtnSetLogin) {
         detailBtnSetLogin.onclick = () => setInfluencerLogin(id, data);
->>>>>>> bfe0057 (Add influencer login, replies, and like UI)
       }
       showDetailSection();
     }
@@ -4366,6 +4360,11 @@
         const reviewSnaps = await Promise.all(
           infDocs.map((infDoc) => getDocs(collection(db, COLLECTION, infDoc.id, 'reviews')))
         );
+
+        // Banlı cihaz ID'lerini yükle
+        const bannedSnap = await getDocs(collection(db, BANNED_DEVICES_COLLECTION));
+        const bannedSet = new Set(bannedSnap.docs.map((d) => d.id));
+
         const items = [];
         infDocs.forEach((infDoc, idx) => {
           const infId = infDoc.id;
@@ -4383,6 +4382,7 @@
               stars: typeof d.stars === 'number' ? d.stars : 0,
               comment: d.comment || '',
               reply: typeof d.reply === 'string' ? d.reply : null,
+              deviceId: typeof d.deviceId === 'string' ? d.deviceId : null,
               date,
               createdAt,
             });
@@ -4401,10 +4401,15 @@
           const row = document.createElement('div');
           row.className = 'review-row';
           const starsStr = '★'.repeat(Math.min(5, Math.max(0, item.stars))) + '☆'.repeat(5 - Math.min(5, Math.max(0, item.stars)));
+          const deviceId = item.deviceId;
+          const isBanned = deviceId ? bannedSet.has(deviceId) : false;
+          const deviceShort = deviceId ? deviceId.substring(0, 12) + '…' : null;
+
           row.innerHTML = `
             <div class="review-row-body">
               <div class="review-row-meta">
                 <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span> · ${escapeHtml(item.date)}
+                ${deviceShort ? `<span style="margin-left:6px;font-size:11px;color:${isBanned ? '#dc2626' : '#94a3b8'};font-family:monospace;font-weight:600;">${isBanned ? '🚫 BANLI · ' : ''}ID: ${escapeHtml(deviceShort)}</span>` : '<span style="margin-left:6px;font-size:11px;color:#cbd5e1;">(eski kayıt – cihaz ID yok)</span>'}
               </div>
               <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
               <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
@@ -4413,9 +4418,13 @@
             </div>
             <div class="review-row-actions">
               ${item.reply ? '<button type="button" class="btn btn-ghost btn-reply-delete" data-inf-id="' + escapeHtml(item.influencerId) + '" data-review-id="' + escapeHtml(item.reviewId) + '">Yanıtı sil</button>' : ''}
+              ${deviceId && !isBanned ? '<button type="button" class="btn btn-ghost btn-ban-device" style="color:#dc2626;border-color:#fca5a5;" data-device-id="' + escapeHtml(deviceId) + '">Cihazı Banla</button>' : ''}
+              ${deviceId && isBanned ? '<button type="button" class="btn btn-ghost btn-unban-device" style="color:#16a34a;border-color:#86efac;" data-device-id="' + escapeHtml(deviceId) + '">Banı Kaldır</button>' : ''}
               <button type="button" class="btn btn-danger btn-review-delete" data-inf-id="${escapeHtml(item.influencerId)}" data-review-id="${escapeHtml(item.reviewId)}">Kalıcı olarak sil</button>
             </div>
           `;
+
+          // Değerlendirme silme
           const deleteBtn = row.querySelector('.btn-review-delete');
           if (deleteBtn) {
             deleteBtn.addEventListener('click', () => {
@@ -4424,6 +4433,8 @@
               openDeleteReviewModal(infId, reviewId, row);
             });
           }
+
+          // Yanıt silme
           const replyDeleteBtn = row.querySelector('.btn-reply-delete');
           if (replyDeleteBtn) {
             replyDeleteBtn.addEventListener('click', async () => {
@@ -4437,7 +4448,6 @@
                   replyUpdatedAt: serverTimestamp(),
                 });
                 showToast('Yanıt silindi.');
-                // satırı güncelle: yanıt satırını ve butonu kaldır
                 const replyEl = row.querySelector('.review-row-reply');
                 if (replyEl) replyEl.remove();
                 replyDeleteBtn.remove();
@@ -4446,6 +4456,49 @@
               }
             });
           }
+
+          // Cihaz ban
+          const banBtn = row.querySelector('.btn-ban-device');
+          if (banBtn) {
+            banBtn.addEventListener('click', async () => {
+              const did = banBtn.dataset.deviceId;
+              if (!did) return;
+              if (!confirm('Bu cihaz kalıcı olarak yasaklanacak. Onaylıyor musunuz?')) return;
+              try {
+                await setDoc(doc(db, BANNED_DEVICES_COLLECTION, did), {
+                  bannedAt: serverTimestamp(),
+                  deviceId: did,
+                });
+                bannedSet.add(did);
+                showToast('Cihaz kalıcı olarak yasaklandı.');
+                // Butonu unban butonuyla değiştir
+                const actionsDiv = row.querySelector('.review-row-actions');
+                banBtn.remove();
+                const unbanBtnNew = document.createElement('button');
+                unbanBtnNew.type = 'button';
+                unbanBtnNew.className = 'btn btn-ghost btn-unban-device';
+                unbanBtnNew.style.cssText = 'color:#16a34a;border-color:#86efac;';
+                unbanBtnNew.dataset.deviceId = did;
+                unbanBtnNew.textContent = 'Banı Kaldır';
+                actionsDiv.insertBefore(unbanBtnNew, actionsDiv.firstChild);
+                // Meta satırındaki etiketi güncelle
+                const metaSpan = row.querySelector('[style*="font-family:monospace"]');
+                if (metaSpan) metaSpan.style.color = '#dc2626';
+                if (metaSpan) metaSpan.textContent = '🚫 BANLI · ID: ' + did.substring(0, 12) + '…';
+                // Yeni unban butonuna listener ekle
+                unbanBtnNew.addEventListener('click', () => unbanDevice(did, unbanBtnNew, row, bannedSet));
+              } catch (err) {
+                showToast('Ban işlemi başarısız: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
+              }
+            });
+          }
+
+          // Cihaz ban kaldırma
+          const unbanBtn = row.querySelector('.btn-unban-device');
+          if (unbanBtn) {
+            unbanBtn.addEventListener('click', () => unbanDevice(unbanBtn.dataset.deviceId, unbanBtn, row, bannedSet));
+          }
+
           reviewsListWrap.appendChild(row);
         }
         window.__dashboardTotalReviews = items.length;
@@ -4454,6 +4507,54 @@
         console.error(err);
         reviewsEmpty.style.display = 'block';
         reviewsEmpty.textContent = 'Değerlendirmeler yüklenirken hata oluştu.';
+      }
+    }
+
+    async function unbanDevice(did, unbanBtn, row, bannedSet) {
+      if (!did) return;
+      if (!confirm('Bu cihazın yasağı kaldırılacak. Onaylıyor musunuz?')) return;
+      try {
+        await deleteDoc(doc(db, BANNED_DEVICES_COLLECTION, did));
+        bannedSet.delete(did);
+        showToast('Cihaz yasağı kaldırıldı.');
+        // Butonu ban butonuyla değiştir
+        const actionsDiv = row.querySelector('.review-row-actions');
+        unbanBtn.remove();
+        const banBtnNew = document.createElement('button');
+        banBtnNew.type = 'button';
+        banBtnNew.className = 'btn btn-ghost btn-ban-device';
+        banBtnNew.style.cssText = 'color:#dc2626;border-color:#fca5a5;';
+        banBtnNew.dataset.deviceId = did;
+        banBtnNew.textContent = 'Cihazı Banla';
+        actionsDiv.insertBefore(banBtnNew, actionsDiv.firstChild);
+        // Meta satırındaki etiketi güncelle
+        const metaSpan = row.querySelector('[style*="font-family:monospace"]');
+        if (metaSpan) metaSpan.style.color = '#94a3b8';
+        if (metaSpan) metaSpan.textContent = 'ID: ' + did.substring(0, 12) + '…';
+        // Yeni ban butonuna listener ekle
+        banBtnNew.addEventListener('click', async () => {
+          if (!confirm('Bu cihaz kalıcı olarak yasaklanacak. Onaylıyor musunuz?')) return;
+          try {
+            await setDoc(doc(db, BANNED_DEVICES_COLLECTION, did), { bannedAt: serverTimestamp(), deviceId: did });
+            bannedSet.add(did);
+            showToast('Cihaz kalıcı olarak yasaklandı.');
+            banBtnNew.remove();
+            const unbanBtnNew2 = document.createElement('button');
+            unbanBtnNew2.type = 'button';
+            unbanBtnNew2.className = 'btn btn-ghost btn-unban-device';
+            unbanBtnNew2.style.cssText = 'color:#16a34a;border-color:#86efac;';
+            unbanBtnNew2.dataset.deviceId = did;
+            unbanBtnNew2.textContent = 'Banı Kaldır';
+            actionsDiv.insertBefore(unbanBtnNew2, actionsDiv.firstChild);
+            if (metaSpan) metaSpan.style.color = '#dc2626';
+            if (metaSpan) metaSpan.textContent = '🚫 BANLI · ID: ' + did.substring(0, 12) + '…';
+            unbanBtnNew2.addEventListener('click', () => unbanDevice(did, unbanBtnNew2, row, bannedSet));
+          } catch (err) {
+            showToast('Ban işlemi başarısız: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
+          }
+        });
+      } catch (err) {
+        showToast('Yasak kaldırılırken hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
       }
     }
 

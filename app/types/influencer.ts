@@ -49,6 +49,8 @@ export interface Review {
   dislikeCount?: number;
   /** Influencer'ın değerlendirmeye verdiği yanıt (varsa) */
   reply?: string;
+  /** Değerlendirmeyi yapan cihazın ID'si (ban için) */
+  deviceId?: string;
 }
 
 /** Değerlendirme raporu (şikayet) */
