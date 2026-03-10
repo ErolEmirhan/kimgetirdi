@@ -83,8 +83,10 @@ export default function InfluencerProfilePage() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [votingReviewId, setVotingReviewId] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
   const [canSubmitToday, setCanSubmitToday] = useState<boolean | null>(null);
   const degerlendirHandled = useRef(false);
+  const voteCooldownRef = useRef<Record<string, number>>({});
   const [canReplyAsInfluencer, setCanReplyAsInfluencer] = useState(false);
   const [replyEditingId, setReplyEditingId] = useState<string | null>(null);
   const [replySavingId, setReplySavingId] = useState<string | null>(null);
@@ -280,10 +282,23 @@ export default function InfluencerProfilePage() {
 
   const handleVote = async (r: Review, vote: "like" | "dislike") => {
     if (!id || votingReviewId) return;
+    const cooldownKey = `${id}-${r.id}`;
+    const now = Date.now();
+    if (voteCooldownRef.current[cooldownKey] && now < voteCooldownRef.current[cooldownKey]) {
+      setVoteError("Çok hızlı işlem. Lütfen 2-3 saniye bekleyip tekrar deneyin.");
+      return;
+    }
+    setVoteError(null);
     setVotingReviewId(r.id);
+    voteCooldownRef.current[cooldownKey] = now + 2500;
     try {
-      const { likeCount, dislikeCount } = await voteReview(id, r.id, vote);
+      const { likeCount, dislikeCount } = await voteReview(id, r.id, vote, {
+        likeCount: r.likeCount ?? 0,
+        dislikeCount: r.dislikeCount ?? 0,
+      });
       setReviews((prev) => prev.map((rev) => (rev.id === r.id ? { ...rev, likeCount, dislikeCount } : rev)));
+    } catch (err) {
+      setVoteError(err instanceof Error ? err.message : "Beğeni güncellenemedi. Lütfen tekrar deneyin.");
     } finally {
       setVotingReviewId(null);
     }
@@ -666,6 +681,11 @@ export default function InfluencerProfilePage() {
               </p>
               <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
             </div>
+            {voteError && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {voteError}
+              </div>
+            )}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
               {orderedReviews.length === 0 ? (
                 <p className="mt-4 text-sm text-slate-500">Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın.</p>

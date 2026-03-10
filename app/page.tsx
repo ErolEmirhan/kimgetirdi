@@ -71,6 +71,7 @@ export default function Home() {
   const [allReviewsFeedLoading, setAllReviewsFeedLoading] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [feedVotingKey, setFeedVotingKey] = useState<string | null>(null);
+  const [feedVoteError, setFeedVoteError] = useState<string | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [splashFadeOut, setSplashFadeOut] = useState(false);
   const [splashLogoError, setSplashLogoError] = useState(false);
@@ -87,6 +88,7 @@ export default function Home() {
   const pageMenuRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const feedVoteCooldownRef = useRef<Record<string, number>>({});
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -287,11 +289,21 @@ export default function Home() {
   };
 
   const handleFeedVote = async (influencerId: string, review: Review, vote: "like" | "dislike") => {
-    const key = `${influencerId}-${review.id}`;
+    const cooldownKey = `${influencerId}-${review.id}`;
     if (feedVotingKey) return;
-    setFeedVotingKey(key);
+    const now = Date.now();
+    if (feedVoteCooldownRef.current[cooldownKey] && now < feedVoteCooldownRef.current[cooldownKey]) {
+      setFeedVoteError("Çok hızlı işlem. Lütfen 2-3 saniye bekleyip tekrar deneyin.");
+      return;
+    }
+    setFeedVoteError(null);
+    setFeedVotingKey(cooldownKey);
+    feedVoteCooldownRef.current[cooldownKey] = now + 2500;
     try {
-      const { likeCount, dislikeCount } = await voteReview(influencerId, review.id, vote);
+      const { likeCount, dislikeCount } = await voteReview(influencerId, review.id, vote, {
+        likeCount: review.likeCount ?? 0,
+        dislikeCount: review.dislikeCount ?? 0,
+      });
       setAllReviewsFeed((prev) =>
         prev.map((item) =>
           item.influencer.id === influencerId && item.review.id === review.id
@@ -299,6 +311,8 @@ export default function Home() {
             : item
         )
       );
+    } catch (err) {
+      setFeedVoteError(err instanceof Error ? err.message : "Beğeni güncellenemedi. Lütfen tekrar deneyin.");
     } finally {
       setFeedVotingKey(null);
     }
@@ -1087,6 +1101,11 @@ export default function Home() {
               </p>
               <div className="mx-auto mt-5 h-px w-20 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
             </header>
+            {feedVoteError && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {feedVoteError}
+              </div>
+            )}
             {allReviewsFeedLoading ? (
               <div className="mt-12 flex flex-col items-center justify-center py-20 text-slate-500">
                 <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />

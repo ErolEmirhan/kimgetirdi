@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, serverTimestamp, updateDoc, type DocumentData } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc, runTransaction, serverTimestamp, updateDoc, increment, type DocumentData } from "firebase/firestore";
 import { getDb, INFLUENCERS_COLLECTION } from "./firebase";
 import { getDeviceId } from "./influencerVotes";
 import { normalizeInstagramUsername } from "./imageUrl";
@@ -163,11 +163,12 @@ export async function deleteReview(influencerId: string, reviewId: string): Prom
   await deleteDoc(ref);
 }
 
-/** Cihaz başına en fazla 1 oy: like veya dislike veya hiçbiri. Oy verir; yeni likeCount/dislikeCount döner. */
+/** Cihaz başına en fazla 1 oy: like veya dislike. Belge okumadan sadece increment ile yazar (okuma kotası tüketilmez). */
 export async function voteReview(
   influencerId: string,
   reviewId: string,
-  vote: "like" | "dislike"
+  vote: "like" | "dislike",
+  currentCounts: { likeCount: number; dislikeCount: number }
 ): Promise<{ likeCount: number; dislikeCount: number }> {
   const db = getDb();
   const current = getStoredVote(influencerId, reviewId);
@@ -200,26 +201,35 @@ export async function voteReview(
     }
   }
 
-  const ref = doc(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION, reviewId);
-  const result = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error("Değerlendirme bulunamadı.");
-    const d = snap.data();
-    const curLike = typeof d.likeCount === "number" ? Math.max(0, d.likeCount) : 0;
-    const curDislike = typeof d.dislikeCount === "number" ? Math.max(0, d.dislikeCount) : 0;
-    const likeCount = Math.max(0, curLike + likeDelta);
-    const dislikeCount = Math.max(0, curDislike + dislikeDelta);
-    tx.update(ref, { likeCount, dislikeCount });
-    return { likeCount, dislikeCount };
-  });
+  const curLike = Math.max(0, currentCounts.likeCount ?? 0);
+  const curDislike = Math.max(0, currentCounts.dislikeCount ?? 0);
+  const nextLike = Math.max(0, curLike + likeDelta);
+  const nextDislike = Math.max(0, curDislike + dislikeDelta);
 
+  const ref = doc(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION, reviewId);
   try {
-    if (newLocal === null) localStorage.removeItem(voteStorageKey(influencerId, reviewId));
-    else localStorage.setItem(voteStorageKey(influencerId, reviewId), newLocal);
-  } catch {
-    /* ignore */
+    const updates: Record<string, ReturnType<typeof increment>> = {};
+    if (likeDelta !== 0) updates.likeCount = increment(likeDelta);
+    if (dislikeDelta !== 0) updates.dislikeCount = increment(dislikeDelta);
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(ref, updates);
+    }
+
+    try {
+      if (newLocal === null) localStorage.removeItem(voteStorageKey(influencerId, reviewId));
+      else localStorage.setItem(voteStorageKey(influencerId, reviewId), newLocal);
+    } catch {
+      /* ignore */
+    }
+    return { likeCount: nextLike, dislikeCount: nextDislike };
+  } catch (err: unknown) {
+    const msg = err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "";
+    const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
+    if (code === "resource-exhausted" || /quota exceeded/i.test(msg)) {
+      throw new Error("Çok hızlı işlem. Lütfen bir saniye bekleyip tekrar deneyin.");
+    }
+    throw err;
   }
-  return result;
 }
 
 function docToReview(id: string, data: DocumentData): Review {
