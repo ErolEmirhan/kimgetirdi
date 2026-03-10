@@ -1,58 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Influencer listesi: herkes okuyabilir; yönetim paneli ekleme/güncelleme/silme yapar
-    match /influencers/{influencerId} {
-      allow read: if true;
-      allow create, update, delete: if true;
-    }
-
-    // Değerlendirmeler: herkes okur, herkes yeni değerlendirme ekleyebilir
-    // Güncelleme: sadece likeCount ve dislikeCount alanları değiştirilebilir (like/dislike oyu)
-    // Silme: yalnızca yönetim rapor incelemesi sonucu
-    match /influencers/{influencerId}/reviews/{reviewId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'dislikeCount']);
-      allow delete: if true;
-    }
-
-    // Değerlendirme raporları (şikayet): herkes rapor oluşturabilir; yönetim okuyup güncelleyebilir
-    match /evaluationReports/{reportId} {
-      allow read, write: if true;
-    }
-
-    // İletişim formu mesajları: siteden herkes oluşturabilir; yönetim paneli okur
-    match /contactMessages/{messageId} {
-      allow read, write: if true;
-    }
-
-    // Sıralama oylaması: her cihaz tek oy (deviceVotes doc id = cihaz id)
-    match /deviceVotes/{deviceId} {
-      allow read, write: if true;
-    }
-
-    // Sıralama toplam oy sayıları (canlı güncelleme)
-    match /aggregates/influencerVotes {
-      allow read, write: if true;
-    }
-
-    // Cihaz başına günde 1 değerlendirme: cihaz_influencer_tarih dokümanı (transaction set için write)
-    match /deviceDailyReviews/{docId} {
-      allow read, write: if true;
-    }
-
-    // Günlük site ziyaret sayacı: ana site yazar (increment), yönetim okur
-    match /dailyVisits/{dateId} {
-      allow read, write: if true;
-    }
-
-    // 8 Mart 2026 kalp sayacı: herkes okur/yazar; cihaz ilk tıklamada devices'a eklenir, heart count güncellenir
-    match /eightMart2026/{docId} {
-      allow read, write: if true;
-    }
-    match /eightMart2026/heart/devices/{deviceId} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }

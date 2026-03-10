@@ -6,6 +6,8 @@ import type { Review } from "@/app/types/influencer";
 
 const DEVICE_DAILY_REVIEWS_COLLECTION = "deviceDailyReviews";
 const BANNED_DEVICES_COLLECTION = "bannedDevices";
+const SETTINGS_COLLECTION = "settings";
+const REVIEW_MODERATION_DOC = "reviewModeration";
 
 /** YYYY-MM-DD (cihazın yerel tarihi) */
 function getTodayDateString(): string {
@@ -66,6 +68,16 @@ function buildReviewerAvatarUrl(instagramHandle: string | undefined): string | n
 const ONE_REVIEW_PER_DEVICE_PER_DAY_MESSAGE =
   "Bu cihazdan bu influencer için bugün zaten bir değerlendirme yapıldı. Yarın tekrar deneyebilirsiniz.";
 
+async function isReviewModerationEnabled(db: ReturnType<typeof getDb>): Promise<boolean> {
+  try {
+    const ref = doc(db, SETTINGS_COLLECTION, REVIEW_MODERATION_DOC);
+    const snap = await getDoc(ref);
+    return snap.exists() ? Boolean(snap.data().enabled) : false;
+  } catch {
+    return false;
+  }
+}
+
 /** Influencer'a değerlendirme ekler, Firestore'a yazar. Cihaz başına günde 1 değerlendirme. */
 export async function addReview(
   influencerId: string,
@@ -81,6 +93,7 @@ export async function addReview(
   const reviewRef = doc(reviewCol);
   const dailyRef = doc(db, DEVICE_DAILY_REVIEWS_COLLECTION, `${deviceId}_${influencerId}_${dateStr}`);
   const banRef = doc(db, BANNED_DEVICES_COLLECTION, deviceId);
+  const moderationEnabled = await isReviewModerationEnabled(db);
 
   await runTransaction(db, async (tx) => {
     // Kalıcı ban kontrolü
@@ -102,6 +115,7 @@ export async function addReview(
       dislikeCount: 0,
       reply: null,
       deviceId: deviceId || null,
+      status: moderationEnabled ? "pending" : "approved",
       createdAt: serverTimestamp(),
     });
     tx.set(dailyRef, { createdAt: serverTimestamp() });
@@ -119,6 +133,7 @@ export async function addReview(
     videoUrl: input.videoUrl?.trim() ?? undefined,
     likeCount: 0,
     dislikeCount: 0,
+    status: moderationEnabled ? "pending" : "approved",
   };
 }
 
@@ -127,7 +142,10 @@ export async function getReviews(influencerId: string): Promise<Review[]> {
   const db = getDb();
   const col = collection(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION);
   const snapshot = await getDocs(col);
-  const list = snapshot.docs.map((doc) => docToReview(doc.id, doc.data()));
+  const list = snapshot.docs
+    .map((doc) => docToReview(doc.id, doc.data()))
+    // Yalnızca onaylanmış değerlendirmeleri göster; pending/rejected gizlenir
+    .filter((r) => r.status !== "pending" && r.status !== "rejected");
   list.sort((a, b) => {
     const docA = snapshot.docs.find((d) => d.id === a.id)?.data();
     const docB = snapshot.docs.find((d) => d.id === b.id)?.data();
@@ -211,6 +229,8 @@ function docToReview(id: string, data: DocumentData): Review {
     new Date().toLocaleDateString("tr-TR");
   const likeCount = typeof data.likeCount === "number" ? Math.max(0, data.likeCount) : 0;
   const dislikeCount = typeof data.dislikeCount === "number" ? Math.max(0, data.dislikeCount) : 0;
+  const status: Review["status"] =
+    typeof data.status === "string" ? (data.status as Review["status"]) : "approved";
   return {
     id,
     businessName: data.businessName ?? "",
@@ -225,6 +245,8 @@ function docToReview(id: string, data: DocumentData): Review {
     dislikeCount,
     reply: typeof data.reply === "string" ? data.reply : undefined,
     deviceId: typeof data.deviceId === "string" ? data.deviceId : undefined,
+    isProtocol: data.isProtocol === true,
+    status,
   };
 }
 

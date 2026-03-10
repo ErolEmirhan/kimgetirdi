@@ -51,6 +51,10 @@ export interface Review {
   reply?: string;
   /** Değerlendirmeyi yapan cihazın ID'si (ban için) */
   deviceId?: string;
+  /** İnceleme durumu: approved | pending | rejected (opsiyonel, geriye dönük uyum için) */
+  status?: "approved" | "pending" | "rejected";
+  /** KimGetirdi protokol yorumu: true ise listede her zaman en üstte, özel tasarımla gösterilir */
+  isProtocol?: boolean;
 }
 
 /** Değerlendirme raporu (şikayet) */

@@ -2838,6 +2838,14 @@
           </span>
           <span class="nav-item-text">Değerlendirmeler</span>
         </a>
+        <a href="#" class="nav-item" id="navProtocolReview">
+          <span class="nav-item-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s-6-4.35-6-10a6 6 0 0 1 12 0c0 5.65-6 10-6 10z"/><path d="M9.5 11.5l1.5 1.5 3.5-3.5"/>
+            </svg>
+          </span>
+          <span class="nav-item-text">Protokol Yorumu</span>
+        </a>
         <a href="#" class="nav-item nav-item--reports" id="navReports">
           <span class="nav-item-icon" aria-hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
@@ -3032,6 +3040,17 @@
           <header class="page-header">
             <h2>Tüm Değerlendirmeler</h2>
             <p>Platformdaki tüm değerlendirmeler. Kalıcı olarak silmek için ilgili satırdaki butonu kullanın.</p>
+            <div style="margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+              <button type="button" class="btn btn-ghost" id="reviewModerationToggle">
+                İncelemeyi başlat
+              </button>
+              <span id="reviewModerationStateLabel" style="font-size:11px;padding:4px 8px;border-radius:999px;background:#f1f5f9;color:#475569;">
+                İnceleme modu: Kapalı
+              </span>
+              <button type="button" class="btn btn-primary" id="openProtocolReviewModal" style="margin-left:auto;">
+                KimGetirdi Protokol Yorumu
+              </button>
+            </div>
           </header>
 
           <!-- Manuel Ban Paneli -->
@@ -3206,6 +3225,36 @@
           <div id="thumbnailCropFrame" class="crop-frame"></div>
         </div>
       </div>
+
+      <!-- Protokol Yorumu Modalı -->
+      <div id="protocolReviewModalOverlay" class="message-detail-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="protocolReviewModalTitle">
+        <div class="message-detail-modal" id="protocolReviewModal" style="max-width:520px;">
+          <div class="message-detail-modal-header">
+            <h3 id="protocolReviewModalTitle">KimGetirdi Protokol Yorumu</h3>
+            <button type="button" class="message-detail-close" id="protocolReviewModalClose" aria-label="Kapat">×</button>
+          </div>
+          <div class="message-detail-body">
+            <p style="font-size:0.85rem;color:#64748b;margin-bottom:0.75rem;">
+              Bir influencer için KimGetirdi adına resmi bir protokol yorumu ekleyebilirsiniz. Bu yorum site üzerinde değerlendirmelerin en üstünde, özel bir tasarımla gösterilir.
+            </p>
+            <div class="form-group">
+              <label for="protocolReviewInfluencer" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Influencer seçin</label>
+              <select id="protocolReviewInfluencer" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;">
+                <option value="">Seçiniz</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem;">
+              <label for="protocolReviewComment" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Yorum metni</label>
+              <textarea id="protocolReviewComment" rows="5" placeholder="KimGetirdi protokol yorumu..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;resize:vertical;"></textarea>
+              <p id="protocolReviewError" style="margin-top:0.25rem;font-size:0.8rem;color:#dc2626;display:none;"></p>
+            </div>
+            <div style="margin-top:1rem;display:flex;justify-content:flex-end;gap:0.5rem;">
+              <button type="button" class="btn btn-ghost" id="protocolReviewCancel">İptal</button>
+              <button type="button" class="btn btn-primary" id="protocolReviewSubmit">Yorumu Kaydet</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="crop-modal-actions">
         <button type="button" class="btn btn-ghost" id="thumbnailCropCancel">İptal</button>
         <button type="button" class="btn btn-primary" id="thumbnailCropApply">Kırp ve kullan</button>
@@ -3258,6 +3307,12 @@
     const REPORTS_COLLECTION = 'evaluationReports';
     const CONTACT_MESSAGES_COLLECTION = 'contactMessages';
     const BANNED_DEVICES_COLLECTION = 'bannedDevices';
+    const SETTINGS_COLLECTION = 'settings';
+    const REVIEW_MODERATION_DOC = 'reviewModeration';
+
+    // İnceleme modu UI referansları bu değişkenlerde tutulacak; DOM hazır olunca atanıyor
+    let reviewModerationToggle;
+    let reviewModerationStateLabel;
     const ADMIN_EMAIL_SUFFIX = '@kimgetirdi.local';
 
     function usernameToEmail(username) {
@@ -3282,6 +3337,36 @@
     const adminSplash = document.getElementById('adminSplash');
     const SPLASH_DURATION_MS = 2600;
 
+    let reviewModerationEnabled = false;
+
+    function updateReviewModerationUI() {
+      if (!reviewModerationToggle || !reviewModerationStateLabel) return;
+      if (reviewModerationEnabled) {
+        reviewModerationToggle.textContent = 'İncelemeyi durdur';
+        reviewModerationStateLabel.textContent = 'İnceleme modu: Açık';
+        reviewModerationStateLabel.style.background = '#dcfce7';
+        reviewModerationStateLabel.style.color = '#166534';
+      } else {
+        reviewModerationToggle.textContent = 'İncelemeyi başlat';
+        reviewModerationStateLabel.textContent = 'İnceleme modu: Kapalı';
+        reviewModerationStateLabel.style.background = '#f1f5f9';
+        reviewModerationStateLabel.style.color = '#475569';
+      }
+    }
+
+    async function loadReviewModerationState() {
+      if (!reviewModerationToggle || !reviewModerationStateLabel) return;
+      try {
+        const ref = doc(db, SETTINGS_COLLECTION, REVIEW_MODERATION_DOC);
+        const snap = await getDoc(ref);
+        reviewModerationEnabled = snap.exists() ? !!snap.data().enabled : false;
+      } catch (err) {
+        console.error(err);
+        reviewModerationEnabled = false;
+      }
+      updateReviewModerationUI();
+    }
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
         if (loginScreen) loginScreen.classList.add('hidden');
@@ -3298,6 +3383,7 @@
         } else if (typeof updateHeroDashboard === 'function') {
           updateHeroDashboard();
         }
+        loadReviewModerationState();
       } else {
         if (loginScreen) { loginScreen.classList.remove('hidden'); loginScreen.style.display = 'flex'; }
         if (appPanel) appPanel.style.display = 'none';
@@ -3411,6 +3497,144 @@
     const messageDetailModalClose = document.getElementById('messageDetailModalClose');
     const reviewsListWrap = document.getElementById('reviewsListWrap');
     const reviewsEmpty = document.getElementById('reviewsEmpty');
+    reviewModerationToggle = document.getElementById('reviewModerationToggle');
+    reviewModerationStateLabel = document.getElementById('reviewModerationStateLabel');
+    const navProtocolReview = document.getElementById('navProtocolReview');
+    const openProtocolReviewModalBtn = document.getElementById('openProtocolReviewModal');
+    const protocolReviewModalOverlay = document.getElementById('protocolReviewModalOverlay');
+    const protocolReviewModalClose = document.getElementById('protocolReviewModalClose');
+    const protocolReviewInfluencerSelect = document.getElementById('protocolReviewInfluencer');
+    const protocolReviewCommentInput = document.getElementById('protocolReviewComment');
+    const protocolReviewError = document.getElementById('protocolReviewError');
+    const protocolReviewCancel = document.getElementById('protocolReviewCancel');
+    const protocolReviewSubmit = document.getElementById('protocolReviewSubmit');
+
+    if (reviewModerationToggle) {
+      reviewModerationToggle.addEventListener('click', async () => {
+        const next = !reviewModerationEnabled;
+        try {
+          reviewModerationToggle.disabled = true;
+          const ref = doc(db, SETTINGS_COLLECTION, REVIEW_MODERATION_DOC);
+          await setDoc(ref, { enabled: next, updatedAt: serverTimestamp() }, { merge: true });
+          reviewModerationEnabled = next;
+          updateReviewModerationUI();
+          showToast(
+            next
+              ? 'İnceleme modu başlatıldı. Yeni değerlendirmeler onay bekleyecek.'
+              : 'İnceleme modu durduruldu. Yeni değerlendirmeler otomatik yayınlanacak.'
+          );
+        } catch (err) {
+          console.error(err);
+          showToast('İnceleme modu güncellenemedi. Lütfen tekrar deneyin.', 'error');
+        } finally {
+          reviewModerationToggle.disabled = false;
+        }
+      });
+    }
+
+    function openProtocolReviewModal() {
+      if (!protocolReviewModalOverlay) return;
+      protocolReviewError.style.display = 'none';
+      protocolReviewError.textContent = '';
+      protocolReviewCommentInput.value = '';
+      // Influencer listesini doldur
+      if (protocolReviewInfluencerSelect) {
+        protocolReviewInfluencerSelect.innerHTML = '<option value=\"\">Seçiniz</option>';
+        getDocs(collection(db, COLLECTION))
+          .then((snap) => {
+            snap.docs.forEach((infDoc) => {
+              const data = infDoc.data();
+              const opt = document.createElement('option');
+              opt.value = infDoc.id;
+              opt.textContent = data.name || 'İsimsiz';
+              protocolReviewInfluencerSelect.appendChild(opt);
+            });
+          })
+          .catch(() => {});
+      }
+      protocolReviewModalOverlay.style.display = 'flex';
+      protocolReviewModalOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeProtocolReviewModal() {
+      if (!protocolReviewModalOverlay) return;
+      protocolReviewModalOverlay.style.display = 'none';
+      protocolReviewModalOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    if (navProtocolReview) {
+      navProtocolReview.addEventListener('click', (e) => {
+        e.preventDefault();
+        showReviewsSection();
+        openProtocolReviewModal();
+      });
+    }
+
+    if (openProtocolReviewModalBtn) {
+      openProtocolReviewModalBtn.addEventListener('click', () => {
+        openProtocolReviewModal();
+      });
+    }
+
+    if (protocolReviewModalClose) {
+      protocolReviewModalClose.addEventListener('click', closeProtocolReviewModal);
+    }
+    if (protocolReviewCancel) {
+      protocolReviewCancel.addEventListener('click', closeProtocolReviewModal);
+    }
+    if (protocolReviewModalOverlay) {
+      protocolReviewModalOverlay.addEventListener('click', (e) => {
+        if (e.target === protocolReviewModalOverlay) closeProtocolReviewModal();
+      });
+    }
+
+    if (protocolReviewSubmit) {
+      protocolReviewSubmit.addEventListener('click', async () => {
+        if (!protocolReviewInfluencerSelect || !protocolReviewCommentInput) return;
+        const infId = protocolReviewInfluencerSelect.value;
+        const comment = protocolReviewCommentInput.value.trim();
+        protocolReviewError.style.display = 'none';
+        protocolReviewError.textContent = '';
+        if (!infId) {
+          protocolReviewError.textContent = 'Lütfen bir influencer seçin.';
+          protocolReviewError.style.display = 'block';
+          return;
+        }
+        if (!comment || comment.length < 10) {
+          protocolReviewError.textContent = 'Lütfen en az birkaç cümlelik anlamlı bir yorum yazın.';
+          protocolReviewError.style.display = 'block';
+          return;
+        }
+        try {
+          protocolReviewSubmit.disabled = true;
+          await addDoc(collection(db, COLLECTION, infId, 'reviews'), {
+            businessName: 'KimGetirdi Protokol Yorumu',
+            stars: 0,
+            comment,
+            instagramHandle: null,
+            reviewerAvatarUrl: null,
+            videoUrl: null,
+            priceRange: null,
+            likeCount: 0,
+            dislikeCount: 0,
+            reply: null,
+            deviceId: null,
+            isProtocol: true,
+            status: 'approved',
+            createdAt: serverTimestamp(),
+          });
+          showToast('Protokol yorumu kaydedildi.');
+          closeProtocolReviewModal();
+          loadAllReviews();
+        } catch (err) {
+          console.error(err);
+          protocolReviewError.textContent = 'Yorum kaydedilemedi. Lütfen tekrar deneyin.';
+          protocolReviewError.style.display = 'block';
+        } finally {
+          protocolReviewSubmit.disabled = false;
+        }
+      });
+    }
 
     let editingId = null;
     let profileImageDataUrl = null;
@@ -4417,6 +4641,7 @@
               comment: d.comment || '',
               reply: typeof d.reply === 'string' ? d.reply : null,
               deviceId: typeof d.deviceId === 'string' ? d.deviceId : null,
+              status: d.status || 'approved',
               date,
               createdAt,
             });
@@ -4437,6 +4662,7 @@
           const starsStr = '★'.repeat(Math.min(5, Math.max(0, item.stars))) + '☆'.repeat(5 - Math.min(5, Math.max(0, item.stars)));
           const deviceId = item.deviceId;
           const isBanned = deviceId ? bannedSet.has(deviceId) : false;
+          const status = item.status || 'approved';
 
           // Cihaz ID chip HTML
           let deviceChipHtml = '';
@@ -4458,6 +4684,11 @@
             deviceChipHtml = `<span style="margin-left:8px;font-size:10.5px;color:#cbd5e1;font-style:italic;">cihaz ID yok</span>`;
           }
 
+          const statusBadge =
+            status === 'pending'
+              ? '<span style="margin-left:auto;padding:2px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:600;">Onay bekliyor</span>'
+              : '';
+
           row.innerHTML = `
             <div class="review-row-body">
               <div class="review-row-meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;">
@@ -4465,6 +4696,7 @@
                 <span style="color:#94a3b8;margin:0 2px;">·</span>
                 <span>${escapeHtml(item.date)}</span>
                 ${deviceChipHtml}
+                ${statusBadge}
               </div>
               <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
               <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
@@ -4472,6 +4704,13 @@
               ${item.reply ? '<div class="review-row-content review-row-reply"><strong>Yanıt:</strong> ' + escapeHtml(item.reply) + '</div>' : ''}
             </div>
             <div class="review-row-actions">
+              ${status === 'pending'
+                ? '<button type="button" class="btn btn-primary btn-review-approve" data-inf-id="' +
+                  escapeHtml(item.influencerId) +
+                  '" data-review-id="' +
+                  escapeHtml(item.reviewId) +
+                  '">Onayla</button>'
+                : ''}
               ${item.reply ? '<button type="button" class="btn btn-ghost btn-reply-delete" data-inf-id="' + escapeHtml(item.influencerId) + '" data-review-id="' + escapeHtml(item.reviewId) + '">Yanıtı sil</button>' : ''}
               ${deviceId && !isBanned ? '<button type="button" class="btn btn-danger btn-ban-device" data-device-id="' + escapeHtml(deviceId) + '">🚫 Cihazı Banla</button>' : ''}
               ${deviceId && isBanned ? '<button type="button" class="btn btn-ghost btn-unban-device" style="color:#16a34a;border-color:#86efac;" data-device-id="' + escapeHtml(deviceId) + '">✓ Banı Kaldır</button>' : ''}
@@ -4490,6 +4729,32 @@
                 showToast('Cihaz ID kopyalandı.');
               } catch {
                 prompt('Cihaz ID (kopyala):', fullId);
+              }
+            });
+          }
+
+          // Değerlendirme onaylama
+          const approveBtn = row.querySelector('.btn-review-approve');
+          if (approveBtn) {
+            approveBtn.addEventListener('click', async () => {
+              const infId = approveBtn.dataset.infId;
+              const reviewId = approveBtn.dataset.reviewId;
+              if (!infId || !reviewId) return;
+              try {
+                await updateDoc(doc(db, COLLECTION, infId, 'reviews', reviewId), {
+                  status: 'approved',
+                });
+                showToast('Değerlendirme onaylandı.');
+                // Satırdaki etiket ve butonu güncelle
+                const statusLabel = row.querySelector('span[style*=\"Onay bekliyor\"]');
+                if (statusLabel) {
+                  statusLabel.textContent = 'Onaylandı';
+                  statusLabel.style.background = '#dcfce7';
+                  statusLabel.style.color = '#166534';
+                }
+                approveBtn.remove();
+              } catch (err) {
+                showToast('Onay sırasında hata: ' + (err && err.message ? err.message : 'Tekrar deneyin.'), 'error');
               }
             });
           }

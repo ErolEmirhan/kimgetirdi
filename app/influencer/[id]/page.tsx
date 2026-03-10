@@ -90,6 +90,13 @@ export default function InfluencerProfilePage() {
   const [replySavingId, setReplySavingId] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [showPendingNotice, setShowPendingNotice] = useState(false);
+
+  const orderedReviews = useMemo(() => {
+    const protos = reviews.filter((r) => r.isProtocol);
+    const normals = reviews.filter((r) => !r.isProtocol);
+    return [...protos, ...normals];
+  }, [reviews]);
 
   useEffect(() => {
     const onScroll = () => setHeaderSolid(window.scrollY > 180);
@@ -196,20 +203,40 @@ export default function InfluencerProfilePage() {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formBusiness.trim() || !id) return;
+    if (!id) return;
+    const business = formBusiness.trim();
+    const rawVideoUrl = formVideoUrl.trim();
+    if (!business) {
+      setSubmitError("Lütfen işletme ismini girin.");
+      return;
+    }
+    if (!rawVideoUrl) {
+      setSubmitError("İş birliği yaptığınız Instagram Reels video linki zorunludur.");
+      return;
+    }
+    if (!getReelEmbedUrl(rawVideoUrl)) {
+      setSubmitError("Lütfen geçerli bir Instagram Reels linki girin (https://www.instagram.com/reel/...).");
+      return;
+    }
     setSubmitError(null);
     setSubmitLoading(true);
     try {
       const instagramUsername = normalizeInstagramUsername(formInstagram);
       const review = await addReview(id, {
-        businessName: formBusiness.trim(),
+        businessName: business,
         stars: formStars,
         comment: formComment.trim() || undefined,
         instagramHandle: instagramUsername ? `@${instagramUsername}` : undefined,
-        videoUrl: formVideoUrl.trim() || undefined,
+        videoUrl: rawVideoUrl,
         priceRange: formPriceRange.trim() || undefined,
       });
-      setReviews((prev) => [review, ...prev]);
+
+      // İnceleme modu açıksa (status: pending) yorumu hemen göstermeyelim, sadece bilgilendirme gösterelim
+      if (review.status === "pending") {
+        setShowPendingNotice(true);
+      } else {
+        setReviews((prev) => [review, ...prev]);
+      }
       setFormBusiness("");
       setFormStars(3);
       setFormComment("");
@@ -618,25 +645,43 @@ export default function InfluencerProfilePage() {
               <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-slate-300 to-transparent" aria-hidden />
             </div>
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              {reviews.length === 0 ? (
+              {orderedReviews.length === 0 ? (
                 <p className="mt-4 text-sm text-slate-500">Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın.</p>
               ) : (
                 <ul className="mt-4 space-y-4">
-                {reviews.map((r) => {
+                {orderedReviews.map((r) => {
                     const videoEmbedUrl = r.videoUrl ? getReelEmbedUrl(r.videoUrl) : null;
                     const hasVideo = !!(videoEmbedUrl || r.videoUrl);
                     const isExpanded = expandedReviewId === r.id;
                     const existingReply = r.reply;
                     const draft = replyDrafts[r.id] ?? existingReply ?? "";
                     const isReplySaving = replySavingId === r.id;
+                    const isProtocol = r.isProtocol === true;
                     return (
-                      <li key={r.id} className="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
+                      <li
+                        key={r.id}
+                        className={`border-t pt-4 first:border-0 first:pt-0 ${
+                          isProtocol ? "border-emerald-200/80 bg-emerald-50/60 rounded-xl px-3 pb-3" : "border-slate-100"
+                        }`}
+                      >
                         <div>
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h4 className="text-xl font-bold tracking-tight text-slate-900">{r.businessName}</h4>
-                            <div className="text-[20px] leading-none">
-                              <StarRating value={r.stars} />
+                            <div className="flex flex-col gap-1">
+                              <h4 className="text-xl font-bold tracking-tight text-slate-900">
+                                {r.businessName}
+                              </h4>
+                              {isProtocol && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                  KimGetirdi Protokol Yorumu
+                                </span>
+                              )}
                             </div>
+                            {!isProtocol && (
+                              <div className="text-[20px] leading-none">
+                                <StarRating value={r.stars} />
+                              </div>
+                            )}
                           </div>
                             <p className="mt-1.5 text-sm text-slate-600">{r.comment || "—"}</p>
                             {hasVideo && (
@@ -998,7 +1043,7 @@ export default function InfluencerProfilePage() {
             </div>
             <div className="mt-4">
               <label htmlFor="review-video" className="text-xs font-medium text-slate-600">
-                Ortak iş yaptığınız video linki <span className="text-slate-400">(opsiyonel)</span>
+                Ortak iş yaptığınız Instagram Reels video linki <span className="text-red-500">*</span>
               </label>
               <input
                 id="review-video"
@@ -1007,6 +1052,7 @@ export default function InfluencerProfilePage() {
                 value={formVideoUrl}
                 onChange={(e) => setFormVideoUrl(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                required
               />
             </div>
             <div className="mt-4">
@@ -1046,6 +1092,33 @@ export default function InfluencerProfilePage() {
             </div>
           </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* İnceleme modunda gönderilen değerlendirme için bilgilendirme */}
+      {showPendingNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-2xl border border-emerald-100 bg-white p-6 text-center shadow-xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="font-display text-lg font-semibold text-slate-900">
+              Değerlendirmeniz alındı
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Güvenliği korumak için bu profil için yapılan yeni değerlendirmeler önce ekip
+              tarafından inceleniyor. Uygun görülürse kısa süre içinde yayına alınacaktır.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowPendingNotice(false)}
+              className="mt-5 inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+            >
+              Tamam
+            </button>
           </div>
         </div>
       )}
