@@ -3206,6 +3206,49 @@
         </div>
       </section>
         </section>
+
+        <!-- Protokol Yorumu Sayfası (artık ana içerik içinde) -->
+        <section class="reviews-section visible" id="protocolReviewSection" style="display:none;margin-top:0;">
+          <header class="page-header">
+            <h2>KimGetirdi Protokol Yorumları</h2>
+            <p>Bir influencer için KimGetirdi adına resmi protokol yorumu ekleyin. Bu yorumlar sitede değerlendirmelerin en üstünde, özel bir tasarımla gösterilir.</p>
+          </header>
+          <section class="card">
+            <form id="protocolReviewForm">
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label for="protocolReviewInfluencer" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Influencer seçin</label>
+                  <select id="protocolReviewInfluencer" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;">
+                    <option value="">Seçiniz</option>
+                  </select>
+                </div>
+                <div class="form-group full">
+                  <label for="protocolReviewComment" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Yorum metni</label>
+                  <textarea id="protocolReviewComment" rows="6" placeholder="KimGetirdi protokol yorumu..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;resize:vertical;"></textarea>
+                  <p id="protocolReviewError" style="margin-top:0.25rem;font-size:0.8rem;color:#dc2626;display:none;"></p>
+                  <p id="protocolReviewExistingInfo" style="margin-top:0.25rem;font-size:0.8rem;color:#16a34a;display:none;"></p>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-danger" id="protocolReviewDelete" style="margin-right:auto;display:none;">Protokol yorumunu sil</button>
+                <button type="button" class="btn btn-ghost" id="protocolReviewCancel">Temizle</button>
+                <button type="submit" class="btn btn-primary" id="protocolReviewSubmit">Protokol yorumunu kaydet</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="card" style="margin-top:1.5rem;">
+            <h3 class="card-title">Kaydedilmiş Protokol Yorumları</h3>
+            <p style="font-size:0.8rem;color:#64748b;margin-bottom:0.75rem;">
+              Aşağıda tüm influencer’lar için oluşturduğun KimGetirdi protokol yorumlarını görebilir, düzenlemek için ilgili satırdaki
+              “Düzenle” butonuna basabilir veya tamamen silebilirsin.
+            </p>
+            <div id="protocolReviewList" class="reviews-list-wrap">
+              <div class="list-empty" id="protocolReviewListEmpty">Henüz protokol yorumu yok.</div>
+            </div>
+          </section>
+        </section>
+
       </div>
     </main>
   </div>
@@ -3231,35 +3274,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Protokol Yorumu Sayfası -->
-      <section class="reviews-section" id="protocolReviewSection" style="display:none;">
-        <header class="page-header">
-          <h2>KimGetirdi Protokol Yorumları</h2>
-          <p>Bir influencer için KimGetirdi adına resmi protokol yorumu ekleyin. Bu yorumlar sitede değerlendirmelerin en üstünde, özel bir tasarımla gösterilir.</p>
-        </header>
-        <section class="card">
-          <form id="protocolReviewForm">
-            <div class="form-grid">
-              <div class="form-group full">
-                <label for="protocolReviewInfluencer" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Influencer seçin</label>
-                <select id="protocolReviewInfluencer" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;">
-                  <option value="">Seçiniz</option>
-                </select>
-              </div>
-              <div class="form-group full">
-                <label for="protocolReviewComment" style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Yorum metni</label>
-                <textarea id="protocolReviewComment" rows="6" placeholder="KimGetirdi protokol yorumu..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;border:1px solid #cbd5e1;font-size:0.85rem;resize:vertical;"></textarea>
-                <p id="protocolReviewError" style="margin-top:0.25rem;font-size:0.8rem;color:#dc2626;display:none;"></p>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn btn-ghost" id="protocolReviewCancel">Temizle</button>
-              <button type="submit" class="btn btn-primary" id="protocolReviewSubmit">Protokol yorumunu kaydet</button>
-            </div>
-          </form>
-        </section>
-      </section>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
@@ -3496,6 +3510,8 @@
     const messageDetailModalClose = document.getElementById('messageDetailModalClose');
     const reviewsListWrap = document.getElementById('reviewsListWrap');
     const reviewsEmpty = document.getElementById('reviewsEmpty');
+    const protocolReviewList = document.getElementById('protocolReviewList');
+    const protocolReviewListEmpty = document.getElementById('protocolReviewListEmpty');
     const protocolReviewSection = document.getElementById('protocolReviewSection');
     reviewModerationToggle = document.getElementById('reviewModerationToggle');
     reviewModerationStateLabel = document.getElementById('reviewModerationStateLabel');
@@ -3504,8 +3520,10 @@
     const protocolReviewInfluencerSelect = document.getElementById('protocolReviewInfluencer');
     const protocolReviewCommentInput = document.getElementById('protocolReviewComment');
     const protocolReviewError = document.getElementById('protocolReviewError');
+    const protocolReviewExistingInfo = document.getElementById('protocolReviewExistingInfo');
     const protocolReviewCancel = document.getElementById('protocolReviewCancel');
     const protocolReviewSubmit = document.getElementById('protocolReviewSubmit');
+    const protocolReviewDelete = document.getElementById('protocolReviewDelete');
 
     if (reviewModerationToggle) {
       reviewModerationToggle.addEventListener('click', async () => {
@@ -3530,11 +3548,189 @@
       });
     }
 
+    let currentProtocolReviewDocId = null;
+
+    async function loadProtocolReviewList() {
+      if (!protocolReviewList || !protocolReviewListEmpty) return;
+      protocolReviewList.querySelectorAll('.review-row').forEach((el) => el.remove());
+      protocolReviewListEmpty.style.display = 'none';
+      protocolReviewListEmpty.textContent = 'Protokol yorumları yükleniyor…';
+      protocolReviewListEmpty.style.display = 'block';
+      try {
+        const infSnapshot = await getDocs(collection(db, COLLECTION));
+        const infDocs = infSnapshot.docs;
+        if (infDocs.length === 0) {
+          protocolReviewListEmpty.textContent = 'Henüz protokol yorumu yok.';
+          return;
+        }
+        const reviewSnaps = await Promise.all(
+          infDocs.map((infDoc) => getDocs(collection(db, COLLECTION, infDoc.id, 'reviews')))
+        );
+        const items = [];
+        infDocs.forEach((infDoc, idx) => {
+          const infId = infDoc.id;
+          const infName = infDoc.data().name || 'İsimsiz';
+          const reviewsSnap = reviewSnaps[idx];
+          reviewsSnap.docs.forEach((revDoc) => {
+            const d = revDoc.data();
+            if (!d || !d.isProtocol) return;
+            const createdAt = d.createdAt?.toMillis?.() ?? 0;
+            const date = d.createdAt?.toDate?.()?.toLocaleDateString?.('tr-TR') || '—';
+            items.push({
+              influencerId: infId,
+              influencerName: infName,
+              reviewId: revDoc.id,
+              comment: d.comment || '',
+              date,
+              createdAt,
+            });
+          });
+        });
+        items.sort((a, b) => b.createdAt - a.createdAt);
+        protocolReviewListEmpty.style.display = 'none';
+        if (items.length === 0) {
+          protocolReviewListEmpty.style.display = 'block';
+          protocolReviewListEmpty.textContent = 'Henüz protokol yorumu yok.';
+          return;
+        }
+        for (const item of items) {
+          const row = document.createElement('div');
+          row.className = 'review-row review-row--protocol';
+          row.innerHTML = `
+            <div class="review-row-body">
+              <div class="review-row-meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+                <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span>
+                <span style="color:#94a3b8;margin:0 2px;">·</span>
+                <span>${escapeHtml(item.date)}</span>
+                <span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#4f46e5;font-size:10px;font-weight:600;">Protokol</span>
+              </div>
+              ${item.comment ? '<div class="review-row-content" style="margin-top:0.5rem;">' + escapeHtml(item.comment) + '</div>' : ''}
+            </div>
+            <div class="review-row-actions">
+              <button type="button" class="btn btn-ghost btn-protocol-edit" data-inf-id="${escapeHtml(
+                item.influencerId
+              )}" data-review-id="${escapeHtml(item.reviewId)}">Düzenle</button>
+              <button type="button" class="btn btn-danger btn-protocol-delete" data-inf-id="${escapeHtml(
+                item.influencerId
+              )}" data-review-id="${escapeHtml(item.reviewId)}">Sil</button>
+            </div>
+          `;
+
+          const editBtn = row.querySelector('.btn-protocol-edit');
+          if (editBtn) {
+            editBtn.addEventListener('click', () => {
+              const infId = editBtn.dataset.infId;
+              if (!infId || !protocolReviewInfluencerSelect) return;
+              // Seçimi ilgili influencer'a çek
+              protocolReviewInfluencerSelect.value = infId;
+              loadProtocolReviewForInfluencer(infId);
+              showProtocolReviewSection();
+              protocolReviewSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+
+          const deleteBtn = row.querySelector('.btn-protocol-delete');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', async () => {
+              const infId = deleteBtn.dataset.infId;
+              const reviewId = deleteBtn.dataset.reviewId;
+              if (!infId || !reviewId) return;
+              const confirmed = window.confirm('Bu protokol yorumunu silmek istediğinize emin misiniz?');
+              if (!confirmed) return;
+              try {
+                deleteBtn.disabled = true;
+                await deleteDoc(doc(db, COLLECTION, infId, 'reviews', reviewId));
+                if (currentProtocolReviewDocId === reviewId) {
+                  currentProtocolReviewDocId = null;
+                  if (protocolReviewCommentInput) protocolReviewCommentInput.value = '';
+                  if (protocolReviewExistingInfo) {
+                    protocolReviewExistingInfo.style.display = 'none';
+                    protocolReviewExistingInfo.textContent = '';
+                  }
+                  if (protocolReviewDelete) {
+                    protocolReviewDelete.style.display = 'none';
+                  }
+                  if (protocolReviewSubmit) {
+                    protocolReviewSubmit.textContent = 'Protokol yorumunu kaydet';
+                  }
+                }
+                showToast('Protokol yorumu silindi.');
+                loadProtocolReviewList();
+                loadAllReviews();
+              } catch (err) {
+                console.error(err);
+                showToast('Protokol yorumu silinemedi. Lütfen tekrar deneyin.', 'error');
+              } finally {
+                deleteBtn.disabled = false;
+              }
+            });
+          }
+
+          protocolReviewList.appendChild(row);
+        }
+      } catch (err) {
+        console.error(err);
+        protocolReviewListEmpty.style.display = 'block';
+        protocolReviewListEmpty.textContent = 'Protokol yorumları yüklenemedi.';
+      }
+    }
+
+    async function loadProtocolReviewForInfluencer(influencerId) {
+      currentProtocolReviewDocId = null;
+      if (protocolReviewExistingInfo) {
+        protocolReviewExistingInfo.style.display = 'none';
+        protocolReviewExistingInfo.textContent = '';
+      }
+      if (protocolReviewDelete) {
+        protocolReviewDelete.style.display = 'none';
+      }
+      if (!protocolReviewCommentInput) return;
+      protocolReviewCommentInput.value = '';
+      if (!influencerId) return;
+      try {
+        const snap = await getDocs(collection(db, COLLECTION, influencerId, 'reviews'));
+        let found = null;
+        snap.forEach((d) => {
+          const data = d.data();
+          if (data && data.isProtocol && !found) {
+            found = { id: d.id, data };
+          }
+        });
+        if (found) {
+          currentProtocolReviewDocId = found.id;
+          protocolReviewCommentInput.value = found.data.comment || '';
+          if (protocolReviewExistingInfo) {
+            protocolReviewExistingInfo.textContent =
+              'Bu influencer için kayıtlı bir protokol yorumu mevcut. Yorum metnini düzenleyebilir veya silebilirsiniz.';
+            protocolReviewExistingInfo.style.display = 'block';
+          }
+          if (protocolReviewDelete) {
+            protocolReviewDelete.style.display = 'inline-flex';
+          }
+          if (protocolReviewSubmit) {
+            protocolReviewSubmit.textContent = 'Protokol yorumunu güncelle';
+          }
+        } else if (protocolReviewSubmit) {
+          protocolReviewSubmit.textContent = 'Protokol yorumunu kaydet';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     function openProtocolReviewModal() {
       if (!protocolReviewSection || !protocolReviewCommentInput || !protocolReviewError) return;
       protocolReviewError.style.display = 'none';
       protocolReviewError.textContent = '';
       protocolReviewCommentInput.value = '';
+      currentProtocolReviewDocId = null;
+      if (protocolReviewExistingInfo) {
+        protocolReviewExistingInfo.style.display = 'none';
+        protocolReviewExistingInfo.textContent = '';
+      }
+      if (protocolReviewDelete) {
+        protocolReviewDelete.style.display = 'none';
+      }
       // Influencer listesini doldur
       if (protocolReviewInfluencerSelect) {
         protocolReviewInfluencerSelect.innerHTML = '<option value=\"\">Seçiniz</option>';
@@ -3550,6 +3746,9 @@
           })
           .catch(() => {});
       }
+
+      // Protokol yorum listesi her açılışta tazelensin
+      loadProtocolReviewList();
     }
 
     if (navProtocolReview) {
@@ -3564,6 +3763,12 @@
       openProtocolReviewModalBtn.addEventListener('click', () => {
         showProtocolReviewSection();
         openProtocolReviewModal();
+      });
+    }
+
+    if (protocolReviewInfluencerSelect) {
+      protocolReviewInfluencerSelect.addEventListener('change', () => {
+        loadProtocolReviewForInfluencer(protocolReviewInfluencerSelect.value);
       });
     }
 
@@ -3587,24 +3792,33 @@
         }
         try {
           protocolReviewSubmit.disabled = true;
-          await addDoc(collection(db, COLLECTION, infId, 'reviews'), {
-            businessName: 'KimGetirdi Protokol Yorumu',
-            stars: 0,
-            comment,
-            instagramHandle: null,
-            reviewerAvatarUrl: null,
-            videoUrl: null,
-            priceRange: null,
-            likeCount: 0,
-            dislikeCount: 0,
-            reply: null,
-            deviceId: null,
-            isProtocol: true,
-            status: 'approved',
-            createdAt: serverTimestamp(),
-          });
-          showToast('Protokol yorumu kaydedildi.');
-          closeProtocolReviewModal();
+          if (currentProtocolReviewDocId) {
+            await updateDoc(doc(db, COLLECTION, infId, 'reviews', currentProtocolReviewDocId), {
+              comment,
+              updatedAt: serverTimestamp(),
+            });
+            showToast('Protokol yorumu güncellendi.');
+          } else {
+            const newDocRef = await addDoc(collection(db, COLLECTION, infId, 'reviews'), {
+              businessName: 'KimGetirdi Protokol Yorumu',
+              stars: 0,
+              comment,
+              instagramHandle: null,
+              reviewerAvatarUrl: null,
+              videoUrl: null,
+              priceRange: null,
+              likeCount: 0,
+              dislikeCount: 0,
+              reply: null,
+              deviceId: null,
+              isProtocol: true,
+              status: 'approved',
+              createdAt: serverTimestamp(),
+            });
+            currentProtocolReviewDocId = newDocRef.id;
+            showToast('Protokol yorumu kaydedildi.');
+          }
+          loadProtocolReviewList();
           loadAllReviews();
         } catch (err) {
           console.error(err);
@@ -3612,6 +3826,42 @@
           protocolReviewError.style.display = 'block';
         } finally {
           protocolReviewSubmit.disabled = false;
+        }
+      });
+    }
+
+    if (protocolReviewDelete) {
+      protocolReviewDelete.addEventListener('click', async () => {
+        if (!protocolReviewInfluencerSelect || !currentProtocolReviewDocId) return;
+        const infId = protocolReviewInfluencerSelect.value;
+        if (!infId) return;
+        const confirmed = window.confirm(
+          'Bu influencer için kayıtlı protokol yorumunu silmek istediğinize emin misiniz?'
+        );
+        if (!confirmed) return;
+        try {
+          protocolReviewDelete.disabled = true;
+          await deleteDoc(doc(db, COLLECTION, infId, 'reviews', currentProtocolReviewDocId));
+          currentProtocolReviewDocId = null;
+          if (protocolReviewCommentInput) protocolReviewCommentInput.value = '';
+          if (protocolReviewExistingInfo) {
+            protocolReviewExistingInfo.style.display = 'none';
+            protocolReviewExistingInfo.textContent = '';
+          }
+          if (protocolReviewDelete) {
+            protocolReviewDelete.style.display = 'none';
+          }
+          if (protocolReviewSubmit) {
+            protocolReviewSubmit.textContent = 'Protokol yorumunu kaydet';
+          }
+          showToast('Protokol yorumu silindi.');
+          loadProtocolReviewList();
+          loadAllReviews();
+        } catch (err) {
+          console.error(err);
+          showToast('Protokol yorumu silinemedi. Lütfen tekrar deneyin.', 'error');
+        } finally {
+          protocolReviewDelete.disabled = false;
         }
       });
     }
@@ -4047,7 +4297,10 @@
       messagesSection.classList.remove('visible');
       reviewsSection.classList.remove('visible');
       detailSection.classList.remove('visible');
-      if (protocolReviewSection) protocolReviewSection.style.display = 'block';
+      if (protocolReviewSection) {
+        protocolReviewSection.style.display = 'block';
+        protocolReviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       openProtocolReviewModal();
     }
 
@@ -4625,6 +4878,7 @@
           const reviewsSnap = reviewSnaps[idx];
           reviewsSnap.docs.forEach((revDoc) => {
             const d = revDoc.data();
+            const isProtocol = !!d.isProtocol;
             const createdAt = d.createdAt?.toMillis?.() ?? 0;
             const date = d.createdAt?.toDate?.()?.toLocaleDateString?.('tr-TR') || '—';
             items.push({
@@ -4635,8 +4889,10 @@
               stars: typeof d.stars === 'number' ? d.stars : 0,
               comment: d.comment || '',
               reply: typeof d.reply === 'string' ? d.reply : null,
+              videoUrl: typeof d.videoUrl === 'string' ? d.videoUrl : null,
               deviceId: typeof d.deviceId === 'string' ? d.deviceId : null,
               status: d.status || 'approved',
+              isProtocol,
               date,
               createdAt,
             });
@@ -4653,7 +4909,7 @@
         }
         for (const item of items) {
           const row = document.createElement('div');
-          row.className = 'review-row';
+          row.className = 'review-row' + (item.isProtocol ? ' review-row--protocol' : '');
           const starsStr = '★'.repeat(Math.min(5, Math.max(0, item.stars))) + '☆'.repeat(5 - Math.min(5, Math.max(0, item.stars)));
           const deviceId = item.deviceId;
           const isBanned = deviceId ? bannedSet.has(deviceId) : false;
@@ -4690,12 +4946,14 @@
                 <span class="review-row-influencer">${escapeHtml(item.influencerName)}</span>
                 <span style="color:#94a3b8;margin:0 2px;">·</span>
                 <span>${escapeHtml(item.date)}</span>
+                ${item.isProtocol ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#4f46e5;font-size:10px;font-weight:600;">Protokol</span>' : ''}
                 ${deviceChipHtml}
                 ${statusBadge}
               </div>
               <div class="review-row-content"><strong>${escapeHtml(item.businessName)}</strong></div>
               <div class="review-row-stars" aria-label="${item.stars} yıldız">${starsStr}</div>
               ${item.comment ? '<div class="review-row-content" style="margin-top:0.5rem;">' + escapeHtml(item.comment) + '</div>' : ''}
+              ${item.videoUrl ? '<div class="review-row-content" style="margin-top:0.5rem;"><strong>Reels:</strong> <a href="' + escapeHtml(item.videoUrl) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);word-break:break-all;">' + escapeHtml(item.videoUrl) + '</a></div>' : ''}
               ${item.reply ? '<div class="review-row-content review-row-reply"><strong>Yanıt:</strong> ' + escapeHtml(item.reply) + '</div>' : ''}
             </div>
             <div class="review-row-actions">

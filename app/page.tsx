@@ -13,6 +13,7 @@ import { getPriceRangeSortValue } from "@/lib/priceRange";
 import { addContactMessage } from "@/lib/contactMessages";
 import { setInfluencerVote, subscribeVoteCounts, subscribeMyVote } from "@/lib/influencerVotes";
 import { loginInfluencer, getStoredInfluencerSession, clearInfluencerSession } from "@/lib/influencerAuth";
+import { loginAdmin, getStoredAdminSession, clearAdminSession } from "@/lib/adminAuth";
 import { motion } from "framer-motion";
 import type { Influencer, Review } from "@/app/types/influencer";
 
@@ -81,6 +82,7 @@ export default function Home() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isAdminSession, setIsAdminSession] = useState(false);
   const [currentInfluencerSession, setCurrentInfluencerSession] = useState<{ id: string; username: string } | null>(null);
   const pageMenuRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -104,9 +106,15 @@ export default function Home() {
   );
 
   useEffect(() => {
-    const existing = getStoredInfluencerSession();
-    if (existing) {
-      setCurrentInfluencerSession({ id: existing.influencerId, username: existing.loginUsername });
+    const existingInfluencer = getStoredInfluencerSession();
+    if (existingInfluencer) {
+      setCurrentInfluencerSession({ id: existingInfluencer.influencerId, username: existingInfluencer.loginUsername });
+      setIsAdminSession(false);
+      return;
+    }
+    const existingAdmin = getStoredAdminSession();
+    if (existingAdmin) {
+      setIsAdminSession(true);
     }
   }, []);
 
@@ -355,9 +363,9 @@ export default function Home() {
             className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-base font-semibold text-slate-900">Influencer Giriş</h2>
+            <h2 className="text-base font-semibold text-slate-900">Giriş</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Yönetim panelinde tanımlanan kullanıcı adı ve şifre ile giriş yapın.
+              Influencer veya yönetici hesabınızla giriş yapın.
             </p>
             <form
               className="mt-4 space-y-3"
@@ -366,8 +374,23 @@ export default function Home() {
                 setLoginError(null);
                 setLoginLoading(true);
                 try {
+                  // Önce özel admin hesabını dene (patron / Malemirhan121.)
+                  try {
+                    const adminSession = await loginAdmin(loginUsername, loginPassword);
+                    setIsAdminSession(true);
+                    setCurrentInfluencerSession(null);
+                    setLoginModalOpen(false);
+                    setLoginUsername("");
+                    setLoginPassword("");
+                    router.push("/admin");
+                    return;
+                  } catch {
+                    // admin değilse influencer girişi olarak devam et
+                  }
+
                   const session = await loginInfluencer(loginUsername, loginPassword);
                   setCurrentInfluencerSession({ id: session.influencerId, username: session.loginUsername });
+                  setIsAdminSession(false);
                   setLoginModalOpen(false);
                   setLoginUsername("");
                   setLoginPassword("");
@@ -596,16 +619,11 @@ export default function Home() {
             </Link>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative flex w-max flex-col shrink-0 -mt-2.5" ref={pageMenuRef}>
-            {/* En uzun sayfa ismi kadar genişlik için görünmez referans (dikey yer kaplamaz) */}
-            <span className="invisible flex h-0 w-max items-center gap-2.5 overflow-hidden px-3 py-2.5 text-sm font-medium" aria-hidden>
-              {pageIcon("star")}
-              Değerlendirmeler
-            </span>
+            <div className="relative shrink-0 -mt-2.5" ref={pageMenuRef}>
             <button
               type="button"
               onClick={() => setPageMenuOpen((v) => !v)}
-              className="relative flex w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300"
+              className="relative flex w-max min-w-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300"
               aria-expanded={pageMenuOpen}
               aria-haspopup="true"
             >
@@ -618,7 +636,7 @@ export default function Home() {
               </svg>
             </button>
             {pageMenuOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-full min-w-0 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl">
+              <div className="absolute right-0 top-full z-50 mt-2 w-max min-w-full rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl">
                 <a
                   href="/"
                   className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
@@ -710,7 +728,9 @@ export default function Home() {
                         type="button"
                         onClick={() => {
                           clearInfluencerSession();
+                          clearAdminSession();
                           setCurrentInfluencerSession(null);
+                          setIsAdminSession(false);
                           setProfileMenuOpen(false);
                         }}
                         className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
@@ -723,6 +743,16 @@ export default function Home() {
                     </div>
                   )}
                 </>
+              ) : isAdminSession ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push("/admin");
+                  }}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:text-sm"
+                >
+                  Yönetim Paneli
+                </button>
               ) : (
                 <button
                   type="button"
