@@ -246,8 +246,22 @@ function docToReview(id: string, data: DocumentData): Review {
     reply: typeof data.reply === "string" ? data.reply : undefined,
     deviceId: typeof data.deviceId === "string" ? data.deviceId : undefined,
     isProtocol: data.isProtocol === true,
+    ownerLiked: data.ownerLiked === true,
     status,
   };
+}
+
+/** Profil sahibinin marka/protokol yorumunu beğenmesi için kullanılır. */
+export async function setReviewOwnerLike(
+  influencerId: string,
+  reviewId: string,
+  liked: boolean
+): Promise<void> {
+  const db = getDb();
+  const ref = doc(db, INFLUENCERS_COLLECTION, influencerId, REVIEWS_SUBCOLLECTION, reviewId);
+  await updateDoc(ref, {
+    ownerLiked: liked,
+  });
 }
 
 /** Influencer'ın bir değerlendirmeye yanıt eklemesi / güncellemesi için kullanılır. */

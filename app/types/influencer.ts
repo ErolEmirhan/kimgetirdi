@@ -55,6 +55,8 @@ export interface Review {
   status?: "approved" | "pending" | "rejected";
   /** KimGetirdi protokol yorumu: true ise listede her zaman en üstte, özel tasarımla gösterilir */
   isProtocol?: boolean;
+  /** Profil sahibi bu yorumu beğendiyse true (sadece marka yorumu için kullanıyoruz) */
+  ownerLiked?: boolean;
 }
 
 /** Değerlendirme raporu (şikayet) */

@@ -36,15 +36,16 @@ export function useInfluencers() {
           data.map(async (inf) => {
             try {
               const reviews = await getReviews(inf.id);
+              const normalReviews = reviews.filter((r) => !r.isProtocol);
               const avg =
-                reviews.length > 0
-                  ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length
+                normalReviews.length > 0
+                  ? normalReviews.reduce((s, r) => s + r.stars, 0) / normalReviews.length
                   : 0;
-              const estimatedPriceRange = getEstimatedPriceRange(reviews);
+              const estimatedPriceRange = getEstimatedPriceRange(normalReviews);
               return {
                 ...inf,
                 avgRating: Math.round(avg * 10) / 10,
-                reviewCount: reviews.length,
+                reviewCount: normalReviews.length,
                 estimatedPriceRange,
               };
             } catch {

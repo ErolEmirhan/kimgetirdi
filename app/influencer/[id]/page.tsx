@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import type { Influencer, Review } from "@/app/types/influencer";
 import { getInfluencerById } from "@/lib/influencers";
-import { addReview, getReviews, voteReview, getStoredVote, canSubmitReview, setReviewReply } from "@/lib/reviews";
+import { addReview, getReviews, voteReview, getStoredVote, canSubmitReview, setReviewReply, setReviewOwnerLike } from "@/lib/reviews";
 import { addReport } from "@/lib/reports";
 import { PRICE_RANGE_OPTIONS } from "@/lib/priceRange";
 import { proxyImageUrl, getPlaceholderAvatar, getPlaceholderThumb, getInstagramAvatarUrl, getReviewerAvatarApiUrl, getInitialsAvatarUrl, normalizeInstagramUsername, getInstagramProfileUrl } from "@/lib/imageUrl";
@@ -91,7 +91,15 @@ export default function InfluencerProfilePage() {
   const [replyError, setReplyError] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [showPendingNotice, setShowPendingNotice] = useState(false);
+  const [ownerLikeLoadingId, setOwnerLikeLoadingId] = useState<string | null>(null);
 
+  // Protokol yorumlarını istatistiklerin dışında tut
+  const normalReviews = useMemo(
+    () => reviews.filter((r) => !r.isProtocol),
+    [reviews]
+  );
+
+  // Protokol yorumları en üstte, sonra normal yorumlar
   const orderedReviews = useMemo(() => {
     const protos = reviews.filter((r) => r.isProtocol);
     const normals = reviews.filter((r) => !r.isProtocol);
@@ -182,24 +190,24 @@ export default function InfluencerProfilePage() {
   }, [id]);
 
   const avgRating = useMemo(() => {
-    if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((a, r) => a + r.stars, 0);
-    return Math.round((sum / reviews.length) * 10) / 10;
-  }, [reviews]);
+    if (normalReviews.length === 0) return 0;
+    const sum = normalReviews.reduce((a, r) => a + r.stars, 0);
+    return Math.round((sum / normalReviews.length) * 10) / 10;
+  }, [normalReviews]);
 
   const satisfactionPercent = useMemo(() => {
-    if (reviews.length === 0) return 0;
-    const fourPlus = reviews.filter((r) => r.stars >= 4).length;
-    return Math.round((fourPlus / reviews.length) * 100);
-  }, [reviews]);
+    if (normalReviews.length === 0) return 0;
+    const fourPlus = normalReviews.filter((r) => r.stars >= 4).length;
+    return Math.round((fourPlus / normalReviews.length) * 100);
+  }, [normalReviews]);
 
   const starDistribution = useMemo(() => {
     const d = [0, 0, 0, 0, 0];
-    reviews.forEach((r) => {
+    normalReviews.forEach((r) => {
       if (r.stars >= 1 && r.stars <= 5) d[5 - r.stars]++;
     });
     return d;
-  }, [reviews]);
+  }, [normalReviews]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,6 +311,20 @@ export default function InfluencerProfilePage() {
       setReportError(err instanceof Error ? err.message : "Rapor gönderilemedi.");
     } finally {
       setReportSubmitting(false);
+    }
+  };
+
+  const handleOwnerLikeToggle = async (r: Review) => {
+    if (!id || !r.isProtocol || !canReplyAsInfluencer || ownerLikeLoadingId) return;
+    setOwnerLikeLoadingId(r.id);
+    const next = !r.ownerLiked;
+    try {
+      await setReviewOwnerLike(id, r.id, next);
+      setReviews((prev) =>
+        prev.map((rev) => (rev.id === r.id ? { ...rev, ownerLiked: next } : rev))
+      );
+    } finally {
+      setOwnerLikeLoadingId(null);
     }
   };
 
@@ -667,14 +689,24 @@ export default function InfluencerProfilePage() {
                         <div>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-col gap-1">
-                              <h4 className="text-xl font-bold tracking-tight text-slate-900">
-                                {r.businessName}
-                              </h4>
+                              {!isProtocol && (
+                                <h4 className="text-xl font-bold tracking-tight text-slate-900">
+                                  {r.businessName}
+                                </h4>
+                              )}
                               {isProtocol && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                  KimGetirdi Protokol Yorumu
-                                </span>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-emerald-500">
+                                    <img
+                                      src="/kimgetirdi-logo.png"
+                                      alt="KimGetirdi"
+                                      className="h-9 w-9 object-contain"
+                                    />
+                                  </div>
+                                  <span className="text-sm font-semibold text-emerald-900">
+                                    KimGetirdi Marka Yorumu
+                                  </span>
+                                </div>
                               )}
                             </div>
                             {!isProtocol && (
@@ -886,64 +918,115 @@ export default function InfluencerProfilePage() {
                                 )}
                               </div>
                             )}
-                            <div className="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <p className="text-xs text-slate-400">{r.date}</p>
+                            {/* Normal yorumlar için etkileşim alanı; protokol yorumları rapor / like almaz */}
+                            {!isProtocol && (
+                              <div className="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <p className="text-xs text-slate-400">{r.date}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => openReportModal(r)}
+                                    title="Değerlendirmeyi raporla"
+                                    aria-label="Değerlendirmeyi raporla"
+                                    className="rounded p-1 text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                      <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-6.4z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                {r.instagramHandle && normalizeInstagramUsername(r.instagramHandle) && (
+                                  <a
+                                    href={getInstagramProfileUrl(r.instagramHandle)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-auto shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-pink-300 bg-pink-50 px-2.5 py-1.5 text-xs font-medium text-pink-700 shadow-sm transition hover:bg-pink-100 hover:border-pink-400"
+                                    title={`@${normalizeInstagramUsername(r.instagramHandle)}`}
+                                  >
+                                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.205.012-3.584.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                                    </svg>
+                                    <span>Instagram</span>
+                                  </a>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => openReportModal(r)}
-                                  title="Değerlendirmeyi raporla"
-                                  aria-label="Değerlendirmeyi raporla"
-                                  className="rounded p-1 text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => handleVote(r, "like")}
+                                  disabled={votingReviewId === r.id}
+                                  title="Beğen"
+                                  aria-label={`Beğen (${r.likeCount ?? 0})`}
+                                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                                    getStoredVote(id, r.id) === "like"
+                                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                                      : "border-emerald-500/70 bg-white text-emerald-600 hover:bg-emerald-50"
+                                  }`}
                                 >
-                                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                                    <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-6.4z" />
+                                  <svg
+                                    className={`h-4 w-4 ${
+                                      getStoredVote(id, r.id) === "like"
+                                        ? "fill-emerald-500 stroke-emerald-500"
+                                        : "fill-white stroke-emerald-500"
+                                    }`}
+                                    viewBox="0 0 24 24"
+                                    aria-hidden
+                                  >
+                                    <path
+                                      d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z"
+                                      strokeWidth="1.6"
+                                    />
                                   </svg>
+                                  <span className="tabular-nums">{r.likeCount ?? 0}</span>
                                 </button>
                               </div>
-                              {r.instagramHandle && normalizeInstagramUsername(r.instagramHandle) && (
-                                <a
-                                  href={getInstagramProfileUrl(r.instagramHandle)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-auto shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-pink-300 bg-pink-50 px-2.5 py-1.5 text-xs font-medium text-pink-700 shadow-sm transition hover:bg-pink-100 hover:border-pink-400"
-                                  title={`@${normalizeInstagramUsername(r.instagramHandle)}`}
-                                >
-                                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.205.012-3.584.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                                  </svg>
-                                  <span>Instagram</span>
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleVote(r, "like")}
-                                disabled={votingReviewId === r.id}
-                                title="Beğen"
-                                aria-label={`Beğen (${r.likeCount ?? 0})`}
-                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-                                  getStoredVote(id, r.id) === "like"
-                                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
-                                    : "border-emerald-500/70 bg-white text-emerald-600 hover:bg-emerald-50"
-                                }`}
-                              >
-                                <svg
-                                  className={`h-4 w-4 ${
-                                    getStoredVote(id, r.id) === "like"
-                                      ? "fill-emerald-500 stroke-emerald-500"
-                                      : "fill-white stroke-emerald-500"
-                                  }`}
-                                  viewBox="0 0 24 24"
-                                  aria-hidden
-                                >
-                                  <path
-                                    d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z"
-                                    strokeWidth="1.6"
-                                  />
-                                </svg>
-                                <span className="tabular-nums">{r.likeCount ?? 0}</span>
-                              </button>
-                            </div>
+                            )}
+
+                            {/* Marka/protokol yorumu için profil sahibine özel beğeni kalbi */}
+                            {isProtocol && (
+                              <div className="mt-3 flex items-center justify-between">
+                                <p className="text-xs text-slate-400">{r.date}</p>
+                                <div className="flex items-center gap-2">
+                                  {r.ownerLiked && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
+                                      <svg
+                                        className="h-3.5 w-3.5"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                        aria-hidden
+                                      >
+                                        <path d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z" />
+                                      </svg>
+                                      <span>Profil sahibi beğendi</span>
+                                    </span>
+                                  )}
+                                  {canReplyAsInfluencer && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOwnerLikeToggle(r)}
+                                      disabled={ownerLikeLoadingId === r.id}
+                                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                        r.ownerLiked
+                                          ? "border-emerald-500 bg-emerald-500 text-white"
+                                          : "border-emerald-500/60 bg-white text-emerald-700 hover:bg-emerald-50"
+                                      }`}
+                                    >
+                                      <svg
+                                        className="h-3.5 w-3.5"
+                                        viewBox="0 0 24 24"
+                                        fill={r.ownerLiked ? "currentColor" : "none"}
+                                        stroke="currentColor"
+                                        aria-hidden
+                                      >
+                                        <path
+                                          d="M12.1 5.1C10-0.2 2.4 1.4 2.4 7.1c0 3.9 3.4 6.4 6.7 9.1.9.7 1.8 1.5 2.5 2.3.7-.8 1.6-1.6 2.5-2.3 3.3-2.7 6.7-5.2 6.7-9.1 0-5.7-7.6-7.3-9.7-2z"
+                                          strokeWidth="1.6"
+                                        />
+                                      </svg>
+                                      <span>{r.ownerLiked ? "Beğeniyi kaldır" : "Marka olarak beğen"}</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                         </div>
                       </li>
                     );
